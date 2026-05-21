@@ -33,7 +33,7 @@ export const Route = createFileRoute("/defects/$id")({
 });
 
 function DefectDetail() {
-  const { defect } = Route.useLoaderData();
+  const { defect } = Route.useLoaderData() as { defect: (typeof defects)[number] };
   const supplier = defect.supplierId
     ? suppliers.find((s) => s.id === defect.supplierId)
     : undefined;
