@@ -1,9 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { defects, suppliers } from "@/data/mock";
+import { defects } from "@/data/mock";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import { OwnerChip, PriorityChip } from "@/components/Chips";
-import { formatDate, statusLabel } from "@/lib/format";
-import { CheckCircle2, RotateCcw, Phone } from "lucide-react";
+import { statusLabel } from "@/lib/format";
 
 export const Route = createFileRoute("/defects/$id")({
   loader: ({ params }) => {
@@ -28,166 +26,114 @@ export const Route = createFileRoute("/defects/$id")({
   ),
 });
 
+const statusOptions: Array<{ id: keyof typeof statusLabel; label: string }> = [
+  { id: "new", label: statusLabel["new"] },
+  { id: "in-progress", label: statusLabel["in-progress"] },
+  { id: "fixed", label: statusLabel["fixed"] },
+];
+
 function DefectDetail() {
   const { defect } = Route.useLoaderData() as { defect: (typeof defects)[number] };
-  const supplier = defect.supplierId
-    ? suppliers.find((s) => s.id === defect.supplierId)
-    : undefined;
+  const images = [defect.photoBefore, defect.photoAfter].filter(Boolean) as string[];
 
   return (
-    <div className="pb-4">
-      <ScreenHeader
-        back="/"
-        title={`פריט #${defect.id.replace("d-", "")}`}
-        subtitle={`${defect.room} · ${defect.trade}`}
-      />
+    <div className="pb-10">
+      <ScreenHeader back="/" title="פרטי פגם" subtitle={defect.room} />
 
-      <div className="px-5 space-y-5">
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">
-              לפני
-            </p>
-            <div
-              className="aspect-square rounded-xl ring-1 ring-black/5"
-              style={{ backgroundImage: defect.photoBefore }}
-            />
+      <div className="px-5 space-y-6">
+        <section>
+          <Label>נושא</Label>
+          <h2 className="text-lg font-semibold text-balance mt-1">{defect.title}</h2>
+        </section>
+
+        <section>
+          <Label>מיקום</Label>
+          <p className="text-sm mt-1">
+            {defect.room}
+            {defect.location ? ` · ${defect.location}` : ""}
+          </p>
+        </section>
+
+        <section>
+          <Label>תיאור</Label>
+          <p className="text-sm leading-relaxed text-foreground/80 text-pretty mt-1">
+            {defect.description}
+          </p>
+        </section>
+
+        <section>
+          <Label>סטטוס</Label>
+          <div className="grid grid-cols-3 gap-2 mt-2">
+            {statusOptions.map((s) => {
+              const active = s.id === defect.status;
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  className={`py-2 rounded-lg text-xs font-medium transition-colors ${
+                    active
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-card ring-1 ring-black/5 text-muted-foreground"
+                  }`}
+                >
+                  {s.label}
+                </button>
+              );
+            })}
           </div>
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">
-              אחרי
-            </p>
-            <div
-              className={`aspect-square rounded-xl ring-1 ring-black/5 grid place-items-center ${
-                defect.photoAfter ? "" : "bg-secondary"
-              }`}
-              style={defect.photoAfter ? { backgroundImage: defect.photoAfter } : {}}
-            >
-              {!defect.photoAfter && (
-                <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-                  ממתין
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
+        </section>
 
-        <div>
-          <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <PriorityChip priority={defect.priority} />
-            <OwnerChip owner={defect.owner} />
-            <span className="text-[10px] font-medium px-1.5 py-0.5 bg-secondary text-muted-foreground rounded ring-1 ring-black/5">
-              {statusLabel[defect.status]}
-            </span>
-          </div>
-          <h2 className="text-lg font-semibold text-balance">{defect.title}</h2>
-        </div>
-
-        <div className="grid grid-cols-2 gap-y-5 pt-2 border-t border-black/5">
-          <Field label="אזור" value={defect.room} />
-          <Field label="תחום" value={defect.trade} />
-          <Field label="מיקום מדויק" value={defect.location} />
-          <Field label="תאריך יעד" value={formatDate(defect.dueDate)} />
-          <Field label="דווח בתאריך" value={formatDate(defect.reportedAt)} />
-          <Field label="אסמכתא בפרוטוקול" value={defect.protocolRef} />
-          <div className="col-span-2">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
-              תיאור
-            </p>
-            <p className="text-sm leading-relaxed text-foreground/80 text-pretty">
-              {defect.description}
-            </p>
-          </div>
-        </div>
-
-        {supplier && (
-          <Link
-            to="/suppliers/$id"
-            params={{ id: supplier.id }}
-            className="flex items-center gap-3 p-3 bg-card ring-1 ring-black/5 rounded-xl"
-          >
-            <div className="size-9 grid place-items-center bg-secondary rounded-lg text-[11px] font-semibold">
-              {supplier.initials}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{supplier.name}</p>
-              <p className="text-xs text-muted-foreground truncate">{supplier.domain}</p>
-            </div>
-            <a
-              href={`tel:${supplier.phone}`}
-              onClick={(e) => e.stopPropagation()}
-              className="size-9 grid place-items-center bg-primary text-primary-foreground rounded-lg"
-            >
-              <Phone className="size-4" />
-            </a>
-          </Link>
-        )}
-
-        {defect.comments.length > 0 && (
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">
-              הערות
-            </p>
-            <div className="space-y-2">
-              {defect.comments.map((c) => (
-                <div key={c.id} className="flex gap-3">
-                  <div className="size-7 rounded-full bg-secondary ring-1 ring-black/5 grid place-items-center text-[10px] font-medium shrink-0">
-                    {c.initials}
-                  </div>
-                  <div className="flex-1 bg-card ring-1 ring-black/5 rounded-xl p-3">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <p className="text-xs font-medium">{c.who}</p>
-                      <p className="text-[10px] text-muted-foreground">{c.at}</p>
-                    </div>
-                    <p className="text-sm text-foreground/80 mt-1">{c.text}</p>
-                  </div>
-                </div>
+        {images.length > 0 && (
+          <section>
+            <Label>תמונות</Label>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              {images.map((img, i) => (
+                <div
+                  key={i}
+                  className="aspect-square rounded-xl ring-1 ring-black/5"
+                  style={{ backgroundImage: img }}
+                />
               ))}
             </div>
-          </div>
+          </section>
         )}
 
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">
-            היסטוריה
-          </p>
-          <div className="space-y-3">
-            {defect.activity.map((a) => (
-              <div key={a.id} className="flex gap-3">
-                <div className="size-6 rounded-full bg-secondary ring-1 ring-black/5 grid place-items-center text-[10px] font-medium shrink-0">
-                  {a.initials}
+        <section>
+          <Label>הערות</Label>
+          <div className="space-y-2 mt-2">
+            {defect.comments.length === 0 && (
+              <p className="text-xs text-muted-foreground">אין הערות עדיין.</p>
+            )}
+            {defect.comments.map((c) => (
+              <div key={c.id} className="flex gap-3">
+                <div className="size-7 rounded-full bg-secondary ring-1 ring-black/5 grid place-items-center text-[10px] font-medium shrink-0">
+                  {c.initials}
                 </div>
-                <div className="flex-1">
-                  <p className="text-xs font-medium">{a.text}</p>
-                  <p className="text-[10px] text-muted-foreground">{a.at}</p>
+                <div className="flex-1 bg-card ring-1 ring-black/5 rounded-xl p-3">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="text-xs font-medium">{c.who}</p>
+                    <p className="text-[10px] text-muted-foreground">{c.at}</p>
+                  </div>
+                  <p className="text-sm text-foreground/80 mt-1">{c.text}</p>
                 </div>
               </div>
             ))}
+            <textarea
+              rows={2}
+              placeholder="הוסף הערה…"
+              className="w-full bg-card ring-1 ring-black/5 rounded-xl px-3 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-foreground/30 resize-none"
+            />
           </div>
-        </div>
-      </div>
-
-      <div className="sticky bottom-20 mt-6 mx-5 grid grid-cols-2 gap-2 bg-surface pt-2">
-        <button className="py-3 px-3 bg-card ring-1 ring-black/5 text-foreground rounded-xl text-sm font-medium flex items-center justify-center gap-1.5">
-          <RotateCcw className="size-4" />
-          דרוש תיקון מחדש
-        </button>
-        <button className="py-3 px-3 bg-primary text-primary-foreground rounded-xl text-sm font-medium flex items-center justify-center gap-1.5">
-          <CheckCircle2 className="size-4" />
-          אישור תיקון
-        </button>
+        </section>
       </div>
     </div>
   );
 }
 
-function Field({ label, value }: { label: string; value: string }) {
+function Label({ children }: { children: React.ReactNode }) {
   return (
-    <div>
-      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
-        {label}
-      </p>
-      <p className="text-sm font-medium">{value}</p>
-    </div>
+    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+      {children}
+    </p>
   );
 }
