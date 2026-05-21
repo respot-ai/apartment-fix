@@ -118,7 +118,7 @@ function DefectsList() {
                   {d.room}
                 </span>
                 <span className="text-[10px] font-medium text-muted-foreground mr-auto">
-                  {statusLabel(d.status)}
+                  {statusLabel[d.status]}
                 </span>
               </div>
               <h3 className="text-sm font-medium leading-snug text-pretty mb-2 line-clamp-2">
