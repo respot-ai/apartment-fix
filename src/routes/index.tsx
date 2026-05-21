@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { defects, rooms, type Status } from "@/data/mock";
-import { sortDefects, statusLabel, shortDate, daysUntil } from "@/lib/format";
+import { defects, rooms } from "@/data/mock";
+import { sortDefects, shortDate, daysUntil, statusLabel } from "@/lib/format";
 import { PriorityChip, OwnerChip } from "@/components/Chips";
 import { Plus, Filter, X } from "lucide-react";
 
@@ -9,23 +9,17 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "פגמים — מעקב מסירת דירה" },
-      { name: "description", content: "לוח קנבן של כל הפגמים בדירה לפי סטטוס ועדיפות." },
+      { name: "description", content: "רשימת כל הפגמים בדירה לפי עדיפות ואזור." },
     ],
   }),
-  component: DefectsBoard,
+  component: DefectsList,
 });
 
-const columns: { id: Status; label: string; tone: string }[] = [
-  { id: "new", label: "חדש", tone: "bg-amber-500" },
-  { id: "in-progress", label: "בטיפול", tone: "bg-blue-500" },
-  { id: "fixed", label: "הושלם", tone: "bg-emerald-500" },
-];
-
-function DefectsBoard() {
+function DefectsList() {
   const [room, setRoom] = useState<string | null>(null);
   const [showFilter, setShowFilter] = useState(false);
 
-  const filtered = defects.filter((d) => (room ? d.room === room : true));
+  const filtered = sortDefects(defects.filter((d) => (room ? d.room === room : true)));
 
   return (
     <div>
@@ -96,78 +90,62 @@ function DefectsBoard() {
         )}
       </header>
 
-      <div className="flex gap-3 overflow-x-auto px-5 py-4 scrollbar-none snap-x snap-mandatory">
-        {columns.map((col) => {
-          const items = sortDefects(filtered.filter((d) => d.status === col.id));
-          return (
-            <div
-              key={col.id}
-              className="shrink-0 w-[78%] snap-start space-y-2"
+      <div className="px-5 py-4 space-y-3">
+        {filtered.length === 0 && (
+          <div className="text-center bg-card/50 ring-1 ring-dashed ring-black/10 rounded-xl py-10">
+            <p className="text-sm text-muted-foreground">אין פגמים</p>
+            <Link
+              to="/defects/new"
+              className="inline-block mt-3 text-sm font-medium text-primary"
             >
-              <div className="flex items-center justify-between px-1">
-                <div className="flex items-center gap-2">
-                  <span className={`size-2 rounded-full ${col.tone}`} />
-                  <h2 className="text-sm font-semibold">{col.label}</h2>
-                </div>
-                <span className="text-xs text-muted-foreground tabular-nums">
-                  {items.length}
+              + הוסף פגם חדש
+            </Link>
+          </div>
+        )}
+        {filtered.map((d) => {
+          const days = daysUntil(d.dueDate);
+          const overdue = days < 0 && d.status !== "fixed";
+          return (
+            <Link
+              key={d.id}
+              to="/defects/$id"
+              params={{ id: d.id }}
+              className="block bg-card ring-1 ring-black/5 p-4 rounded-2xl active:scale-[0.99] transition-transform"
+            >
+              <div className="flex items-center gap-2 mb-1.5">
+                <PriorityChip priority={d.priority} />
+                <span className="text-[10px] font-medium text-muted-foreground">
+                  {d.room}
+                </span>
+                <span className="text-[10px] font-medium text-muted-foreground mr-auto">
+                  {statusLabel(d.status)}
                 </span>
               </div>
-              <div className="space-y-2">
-                {items.length === 0 && (
-                  <p className="text-xs text-muted-foreground text-center bg-card/50 ring-1 ring-dashed ring-black/10 rounded-xl py-6">
-                    אין פריטים
-                  </p>
-                )}
-                {items.map((d) => {
-                  const days = daysUntil(d.dueDate);
-                  const overdue = days < 0 && d.status !== "fixed";
-                  return (
-                    <Link
-                      key={d.id}
-                      to="/defects/$id"
-                      params={{ id: d.id }}
-                      className="block bg-card ring-1 ring-black/5 p-3 rounded-2xl active:scale-[0.99] transition-transform"
-                    >
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <PriorityChip priority={d.priority} />
-                        <span className="text-[10px] font-medium text-muted-foreground">
-                          {d.room}
-                        </span>
-                      </div>
-                      <h3 className="text-sm font-medium leading-snug text-pretty mb-2 line-clamp-2">
-                        {d.title}
-                      </h3>
-                      <div className="flex items-center justify-between">
-                        <OwnerChip owner={d.owner} />
-                        <span
-                          className={`text-[10px] font-medium ${
-                            overdue
-                              ? "text-red-700"
-                              : days <= 2 && d.status !== "fixed"
-                                ? "text-amber-700"
-                                : "text-muted-foreground"
-                          }`}
-                        >
-                          {d.status === "fixed"
-                            ? "הושלם"
-                            : overdue
-                              ? "באיחור"
-                              : shortDate(d.dueDate)}
-                        </span>
-                      </div>
-                    </Link>
-                  );
-                })}
+              <h3 className="text-sm font-medium leading-snug text-pretty mb-2 line-clamp-2">
+                {d.title}
+              </h3>
+              <div className="flex items-center justify-between">
+                <OwnerChip owner={d.owner} />
+                <span
+                  className={`text-[10px] font-medium ${
+                    overdue
+                      ? "text-red-700"
+                      : days <= 2 && d.status !== "fixed"
+                        ? "text-amber-700"
+                        : "text-muted-foreground"
+                  }`}
+                >
+                  {d.status === "fixed"
+                    ? "הושלם"
+                    : overdue
+                      ? "באיחור"
+                      : shortDate(d.dueDate)}
+                </span>
               </div>
-            </div>
+            </Link>
           );
         })}
-        <div className="shrink-0 w-2" aria-hidden />
       </div>
     </div>
   );
 }
-
-// Re-export statusLabel to silence unused import if needed
-void statusLabel;
