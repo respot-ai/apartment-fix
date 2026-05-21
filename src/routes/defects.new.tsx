@@ -1,29 +1,39 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { suppliers, rooms } from "@/data/mock";
 import { Camera, ChevronDown } from "lucide-react";
 
 export const Route = createFileRoute("/defects/new")({
   head: () => ({
     meta: [
-      { title: "Add defect — Handover Tracker" },
-      { name: "description", content: "Log a new apartment handover defect with photos, room, trade, priority, and owner." },
+      { title: "פגם חדש — מעקב מסירת דירה" },
+      { name: "description", content: "תיעוד פגם חדש בדירה." },
     ],
   }),
   component: AddDefect,
 });
 
-const rooms = ["Entrance", "Living Room", "Kitchen", "Master Bedroom", "Bath 1", "Balcony", "Hallway"];
-const trades = ["Doors", "Entrance Door", "Aluminum/Windows", "Kitchen", "Sanitary", "AC", "Solar", "MMAD", "Electrical", "Plumbing", "Flooring", "Paint", "Carpentry", "Balcony"];
-const priorities = ["critical", "high", "medium", "low"] as const;
-const owners = ["contractor", "homeowner", "supplier", "third-party"] as const;
+const trades = ["דלתות", "דלת כניסה", "אלומיניום/חלונות", "מטבח", "סניטרי", "מיזוג", "סולארי", "מולטימדיה", "חשמל", "אינסטלציה", "ריצוף", "צבע", "נגרות", "מרפסת"];
+const priorities = [
+  { id: "critical", label: "דחוף" },
+  { id: "high", label: "גבוה" },
+  { id: "medium", label: "בינוני" },
+  { id: "low", label: "נמוך" },
+] as const;
+const owners = [
+  { id: "contractor", label: "קבלן" },
+  { id: "homeowner", label: "דייר" },
+  { id: "third-party", label: "ספק" },
+] as const;
 
 function AddDefect() {
   const navigate = useNavigate();
   const [room, setRoom] = useState("");
   const [trade, setTrade] = useState("");
-  const [priority, setPriority] = useState<(typeof priorities)[number]>("medium");
-  const [owner, setOwner] = useState<(typeof owners)[number]>("contractor");
+  const [priority, setPriority] = useState<(typeof priorities)[number]["id"]>("medium");
+  const [owner, setOwner] = useState<(typeof owners)[number]["id"]>("contractor");
+  const [supplierId, setSupplierId] = useState("");
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
 
@@ -31,91 +41,107 @@ function AddDefect() {
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        navigate({ to: "/defects" });
+        navigate({ to: "/" });
       }}
     >
-      <ScreenHeader back="/defects" title="New defect" subtitle="Document and assign" />
+      <ScreenHeader back="/" title="פגם חדש" subtitle="תיעוד והקצאה" />
 
       <div className="px-5 space-y-5 pb-6">
-        {/* Photo capture */}
         <button
           type="button"
           className="w-full aspect-video bg-card ring-1 ring-dashed ring-black/15 rounded-2xl grid place-items-center text-center"
         >
           <div>
             <Camera className="size-6 text-muted-foreground mx-auto mb-1.5" />
-            <p className="text-sm font-medium">Take or upload photo</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Up to 6 images</p>
+            <p className="text-sm font-medium">צלם או העלה תמונה</p>
+            <p className="text-xs text-muted-foreground mt-0.5">עד 6 תמונות</p>
           </div>
         </button>
 
-        <Group label="Title">
+        <Group label="כותרת">
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Short defect title"
+            placeholder="כותרת קצרה של הפגם"
             className="w-full bg-card ring-1 ring-black/5 rounded-xl px-3 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-foreground/30"
           />
         </Group>
 
         <div className="grid grid-cols-2 gap-3">
-          <Group label="Room">
-            <Select value={room} onChange={setRoom} options={rooms} placeholder="Select" />
+          <Group label="אזור">
+            <Select value={room} onChange={setRoom} options={rooms} placeholder="בחר" />
           </Group>
-          <Group label="Trade">
-            <Select value={trade} onChange={setTrade} options={trades} placeholder="Select" />
+          <Group label="תחום">
+            <Select value={trade} onChange={setTrade} options={trades} placeholder="בחר" />
           </Group>
         </div>
 
-        <Group label="Description">
+        <Group label="תיאור">
           <textarea
             value={desc}
             onChange={(e) => setDesc(e.target.value)}
             rows={3}
-            placeholder="Exact location and what's wrong"
+            placeholder="מיקום מדויק ומה הבעיה"
             className="w-full bg-card ring-1 ring-black/5 rounded-xl px-3 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-foreground/30 resize-none"
           />
         </Group>
 
-        <Group label="Priority">
+        <Group label="עדיפות">
           <div className="grid grid-cols-4 gap-2">
             {priorities.map((p) => (
               <button
                 type="button"
-                key={p}
-                onClick={() => setPriority(p)}
-                className={`py-2 rounded-lg text-xs font-medium capitalize transition-colors ${
-                  priority === p
+                key={p.id}
+                onClick={() => setPriority(p.id)}
+                className={`py-2 rounded-lg text-xs font-medium transition-colors ${
+                  priority === p.id
                     ? "bg-primary text-primary-foreground"
                     : "bg-card ring-1 ring-black/5 text-muted-foreground"
                 }`}
               >
-                {p}
+                {p.label}
               </button>
             ))}
           </div>
         </Group>
 
-        <Group label="Suggested owner">
-          <div className="grid grid-cols-2 gap-2">
+        <Group label="אחראי">
+          <div className="grid grid-cols-3 gap-2">
             {owners.map((o) => (
               <button
                 type="button"
-                key={o}
-                onClick={() => setOwner(o)}
-                className={`py-2 rounded-lg text-xs font-medium capitalize transition-colors ${
-                  owner === o
+                key={o.id}
+                onClick={() => setOwner(o.id)}
+                className={`py-2 rounded-lg text-xs font-medium transition-colors ${
+                  owner === o.id
                     ? "bg-primary text-primary-foreground"
                     : "bg-card ring-1 ring-black/5 text-muted-foreground"
                 }`}
               >
-                {o.replace("-", " ")}
+                {o.label}
               </button>
             ))}
           </div>
         </Group>
 
-        <Group label="Due date">
+        {owner === "third-party" && (
+          <Group label="בחר ספק מהרשימה">
+            <Select
+              value={supplierId}
+              onChange={setSupplierId}
+              options={suppliers.map((s) => ({ value: s.id, label: `${s.name} · ${s.domain}` }))}
+              placeholder="בחר ספק"
+            />
+            <Link
+              to="/suppliers/new"
+              className="text-xs font-medium text-foreground underline mt-2 inline-block"
+            >
+              + הוסף ספק חדש
+            </Link>
+          </Group>
+        )}
+
+        <Group label="תאריך יעד">
           <input
             type="date"
             className="w-full bg-card ring-1 ring-black/5 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-foreground/30"
@@ -124,16 +150,16 @@ function AddDefect() {
 
         <div className="grid grid-cols-2 gap-2 pt-2">
           <Link
-            to="/defects"
+            to="/"
             className="py-3 bg-card ring-1 ring-black/5 text-foreground rounded-xl text-sm font-medium text-center"
           >
-            Save as draft
+            ביטול
           </Link>
           <button
             type="submit"
             className="py-3 bg-primary text-primary-foreground rounded-xl text-sm font-medium"
           >
-            Submit
+            שמור
           </button>
         </div>
       </div>
@@ -152,6 +178,8 @@ function Group({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
+type Opt = string | { value: string; label: string };
+
 function Select({
   value,
   onChange,
@@ -160,26 +188,29 @@ function Select({
 }: {
   value: string;
   onChange: (v: string) => void;
-  options: string[];
+  options: Opt[];
   placeholder: string;
 }) {
+  const normalized = options.map((o) =>
+    typeof o === "string" ? { value: o, label: o } : o,
+  );
   return (
     <div className="relative">
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full appearance-none bg-card ring-1 ring-black/5 rounded-xl px-3 py-3 pr-9 text-sm focus:outline-none focus:ring-foreground/30"
+        className="w-full appearance-none bg-card ring-1 ring-black/5 rounded-xl px-3 py-3 pl-9 text-sm focus:outline-none focus:ring-foreground/30"
       >
         <option value="" disabled>
           {placeholder}
         </option>
-        {options.map((o) => (
-          <option key={o} value={o}>
-            {o}
+        {normalized.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
           </option>
         ))}
       </select>
-      <ChevronDown className="size-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+      <ChevronDown className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
     </div>
   );
 }

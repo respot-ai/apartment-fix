@@ -9,20 +9,14 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TimelineRouteImport } from './routes/timeline'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SuppliersIndexRouteImport } from './routes/suppliers.index'
-import { Route as DefectsIndexRouteImport } from './routes/defects.index'
+import { Route as SuppliersNewRouteImport } from './routes/suppliers.new'
 import { Route as SuppliersIdRouteImport } from './routes/suppliers.$id'
 import { Route as DefectsNewRouteImport } from './routes/defects.new'
 import { Route as DefectsIdRouteImport } from './routes/defects.$id'
 
-const TimelineRoute = TimelineRouteImport.update({
-  id: '/timeline',
-  path: '/timeline',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ReportsRoute = ReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
@@ -38,9 +32,9 @@ const SuppliersIndexRoute = SuppliersIndexRouteImport.update({
   path: '/suppliers/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DefectsIndexRoute = DefectsIndexRouteImport.update({
-  id: '/defects/',
-  path: '/defects/',
+const SuppliersNewRoute = SuppliersNewRouteImport.update({
+  id: '/suppliers/new',
+  path: '/suppliers/new',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SuppliersIdRoute = SuppliersIdRouteImport.update({
@@ -62,32 +56,29 @@ const DefectsIdRoute = DefectsIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/reports': typeof ReportsRoute
-  '/timeline': typeof TimelineRoute
   '/defects/$id': typeof DefectsIdRoute
   '/defects/new': typeof DefectsNewRoute
   '/suppliers/$id': typeof SuppliersIdRoute
-  '/defects/': typeof DefectsIndexRoute
+  '/suppliers/new': typeof SuppliersNewRoute
   '/suppliers/': typeof SuppliersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/reports': typeof ReportsRoute
-  '/timeline': typeof TimelineRoute
   '/defects/$id': typeof DefectsIdRoute
   '/defects/new': typeof DefectsNewRoute
   '/suppliers/$id': typeof SuppliersIdRoute
-  '/defects': typeof DefectsIndexRoute
+  '/suppliers/new': typeof SuppliersNewRoute
   '/suppliers': typeof SuppliersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/reports': typeof ReportsRoute
-  '/timeline': typeof TimelineRoute
   '/defects/$id': typeof DefectsIdRoute
   '/defects/new': typeof DefectsNewRoute
   '/suppliers/$id': typeof SuppliersIdRoute
-  '/defects/': typeof DefectsIndexRoute
+  '/suppliers/new': typeof SuppliersNewRoute
   '/suppliers/': typeof SuppliersIndexRoute
 }
 export interface FileRouteTypes {
@@ -95,54 +86,43 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/reports'
-    | '/timeline'
     | '/defects/$id'
     | '/defects/new'
     | '/suppliers/$id'
-    | '/defects/'
+    | '/suppliers/new'
     | '/suppliers/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/reports'
-    | '/timeline'
     | '/defects/$id'
     | '/defects/new'
     | '/suppliers/$id'
-    | '/defects'
+    | '/suppliers/new'
     | '/suppliers'
   id:
     | '__root__'
     | '/'
     | '/reports'
-    | '/timeline'
     | '/defects/$id'
     | '/defects/new'
     | '/suppliers/$id'
-    | '/defects/'
+    | '/suppliers/new'
     | '/suppliers/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ReportsRoute: typeof ReportsRoute
-  TimelineRoute: typeof TimelineRoute
   DefectsIdRoute: typeof DefectsIdRoute
   DefectsNewRoute: typeof DefectsNewRoute
   SuppliersIdRoute: typeof SuppliersIdRoute
-  DefectsIndexRoute: typeof DefectsIndexRoute
+  SuppliersNewRoute: typeof SuppliersNewRoute
   SuppliersIndexRoute: typeof SuppliersIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/timeline': {
-      id: '/timeline'
-      path: '/timeline'
-      fullPath: '/timeline'
-      preLoaderRoute: typeof TimelineRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/reports': {
       id: '/reports'
       path: '/reports'
@@ -164,11 +144,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SuppliersIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/defects/': {
-      id: '/defects/'
-      path: '/defects'
-      fullPath: '/defects/'
-      preLoaderRoute: typeof DefectsIndexRouteImport
+    '/suppliers/new': {
+      id: '/suppliers/new'
+      path: '/suppliers/new'
+      fullPath: '/suppliers/new'
+      preLoaderRoute: typeof SuppliersNewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/suppliers/$id': {
@@ -198,11 +178,10 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ReportsRoute: ReportsRoute,
-  TimelineRoute: TimelineRoute,
   DefectsIdRoute: DefectsIdRoute,
   DefectsNewRoute: DefectsNewRoute,
   SuppliersIdRoute: SuppliersIdRoute,
-  DefectsIndexRoute: DefectsIndexRoute,
+  SuppliersNewRoute: SuppliersNewRoute,
   SuppliersIndexRoute: SuppliersIndexRoute,
 }
 export const routeTree = rootRouteImport

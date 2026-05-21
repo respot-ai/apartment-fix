@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { ReactNode } from "react";
 
 export function ScreenHeader({
@@ -20,9 +20,9 @@ export function ScreenHeader({
           {back && (
             <Link
               to={back}
-              className="size-8 -ml-2 grid place-items-center text-muted-foreground hover:text-foreground"
+              className="size-8 -mr-2 grid place-items-center text-muted-foreground hover:text-foreground"
             >
-              <ChevronLeft className="size-5" />
+              <ChevronRight className="size-5" />
             </Link>
           )}
           <div className="min-w-0">
