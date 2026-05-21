@@ -9,38 +9,147 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TimelineRouteImport } from './routes/timeline'
+import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SuppliersIndexRouteImport } from './routes/suppliers.index'
+import { Route as DefectsIndexRouteImport } from './routes/defects.index'
+import { Route as SuppliersIdRouteImport } from './routes/suppliers.$id'
+import { Route as DefectsNewRouteImport } from './routes/defects.new'
+import { Route as DefectsIdRouteImport } from './routes/defects.$id'
 
+const TimelineRoute = TimelineRouteImport.update({
+  id: '/timeline',
+  path: '/timeline',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SuppliersIndexRoute = SuppliersIndexRouteImport.update({
+  id: '/suppliers/',
+  path: '/suppliers/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DefectsIndexRoute = DefectsIndexRouteImport.update({
+  id: '/defects/',
+  path: '/defects/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SuppliersIdRoute = SuppliersIdRouteImport.update({
+  id: '/suppliers/$id',
+  path: '/suppliers/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DefectsNewRoute = DefectsNewRouteImport.update({
+  id: '/defects/new',
+  path: '/defects/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DefectsIdRoute = DefectsIdRouteImport.update({
+  id: '/defects/$id',
+  path: '/defects/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/reports': typeof ReportsRoute
+  '/timeline': typeof TimelineRoute
+  '/defects/$id': typeof DefectsIdRoute
+  '/defects/new': typeof DefectsNewRoute
+  '/suppliers/$id': typeof SuppliersIdRoute
+  '/defects/': typeof DefectsIndexRoute
+  '/suppliers/': typeof SuppliersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/reports': typeof ReportsRoute
+  '/timeline': typeof TimelineRoute
+  '/defects/$id': typeof DefectsIdRoute
+  '/defects/new': typeof DefectsNewRoute
+  '/suppliers/$id': typeof SuppliersIdRoute
+  '/defects': typeof DefectsIndexRoute
+  '/suppliers': typeof SuppliersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/reports': typeof ReportsRoute
+  '/timeline': typeof TimelineRoute
+  '/defects/$id': typeof DefectsIdRoute
+  '/defects/new': typeof DefectsNewRoute
+  '/suppliers/$id': typeof SuppliersIdRoute
+  '/defects/': typeof DefectsIndexRoute
+  '/suppliers/': typeof SuppliersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/reports'
+    | '/timeline'
+    | '/defects/$id'
+    | '/defects/new'
+    | '/suppliers/$id'
+    | '/defects/'
+    | '/suppliers/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/reports'
+    | '/timeline'
+    | '/defects/$id'
+    | '/defects/new'
+    | '/suppliers/$id'
+    | '/defects'
+    | '/suppliers'
+  id:
+    | '__root__'
+    | '/'
+    | '/reports'
+    | '/timeline'
+    | '/defects/$id'
+    | '/defects/new'
+    | '/suppliers/$id'
+    | '/defects/'
+    | '/suppliers/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ReportsRoute: typeof ReportsRoute
+  TimelineRoute: typeof TimelineRoute
+  DefectsIdRoute: typeof DefectsIdRoute
+  DefectsNewRoute: typeof DefectsNewRoute
+  SuppliersIdRoute: typeof SuppliersIdRoute
+  DefectsIndexRoute: typeof DefectsIndexRoute
+  SuppliersIndexRoute: typeof SuppliersIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/timeline': {
+      id: '/timeline'
+      path: '/timeline'
+      fullPath: '/timeline'
+      preLoaderRoute: typeof TimelineRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +157,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/suppliers/': {
+      id: '/suppliers/'
+      path: '/suppliers'
+      fullPath: '/suppliers/'
+      preLoaderRoute: typeof SuppliersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/defects/': {
+      id: '/defects/'
+      path: '/defects'
+      fullPath: '/defects/'
+      preLoaderRoute: typeof DefectsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/suppliers/$id': {
+      id: '/suppliers/$id'
+      path: '/suppliers/$id'
+      fullPath: '/suppliers/$id'
+      preLoaderRoute: typeof SuppliersIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/defects/new': {
+      id: '/defects/new'
+      path: '/defects/new'
+      fullPath: '/defects/new'
+      preLoaderRoute: typeof DefectsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/defects/$id': {
+      id: '/defects/$id'
+      path: '/defects/$id'
+      fullPath: '/defects/$id'
+      preLoaderRoute: typeof DefectsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ReportsRoute: ReportsRoute,
+  TimelineRoute: TimelineRoute,
+  DefectsIdRoute: DefectsIdRoute,
+  DefectsNewRoute: DefectsNewRoute,
+  SuppliersIdRoute: SuppliersIdRoute,
+  DefectsIndexRoute: DefectsIndexRoute,
+  SuppliersIndexRoute: SuppliersIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
