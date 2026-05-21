@@ -1,13 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { suppliers, defects } from "@/data/mock";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import { Phone, Mail, ChevronRight } from "lucide-react";
+import { Phone, Mail, ChevronLeft, Plus } from "lucide-react";
 
 export const Route = createFileRoute("/suppliers/")({
   head: () => ({
     meta: [
-      { title: "Suppliers — Handover Tracker" },
-      { name: "description", content: "Directory of third-party vendors and suppliers grouped by construction trade." },
+      { title: "ספקים — מעקב מסירת דירה" },
+      { name: "description", content: "ספקים וגורמי צד שלישי לפי תחום." },
     ],
   }),
   component: SupplierDirectory,
@@ -21,7 +21,19 @@ function SupplierDirectory() {
 
   return (
     <div>
-      <ScreenHeader title="Suppliers" subtitle={`${suppliers.length} vendors`} />
+      <ScreenHeader
+        title="ספקים"
+        subtitle={`${suppliers.length} ספקים`}
+        right={
+          <Link
+            to="/suppliers/new"
+            className="size-10 grid place-items-center bg-primary text-primary-foreground rounded-full"
+            aria-label="הוסף ספק"
+          >
+            <Plus className="size-5" />
+          </Link>
+        }
+      />
       <div className="px-5 pb-6 space-y-6">
         {Object.entries(grouped).map(([domain, list]) => (
           <section key={domain}>
@@ -44,7 +56,7 @@ function SupplierDirectory() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{s.name}</p>
                       <p className="text-xs text-muted-foreground truncate">
-                        {related.length} related {related.length === 1 ? "defect" : "defects"}
+                        {related.length} {related.length === 1 ? "פגם משויך" : "פגמים משויכים"}
                       </p>
                     </div>
                     <a
@@ -61,7 +73,7 @@ function SupplierDirectory() {
                     >
                       <Mail className="size-4 text-muted-foreground" />
                     </a>
-                    <ChevronRight className="size-4 text-muted-foreground" />
+                    <ChevronLeft className="size-4 text-muted-foreground" />
                   </Link>
                 );
               })}

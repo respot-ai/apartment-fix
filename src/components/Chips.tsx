@@ -1,32 +1,24 @@
-import type { Priority, Status, Owner } from "@/data/mock";
-import {
-  priorityLabel,
-  statusLabel,
-  ownerLabel,
-} from "@/lib/format";
+import type { Owner, Priority, Status } from "@/data/mock";
+import { ownerLabel, priorityLabel, statusLabel } from "@/lib/format";
 
 const statusDot: Record<Status, string> = {
   new: "bg-[var(--warning)]",
-  agreed: "bg-[var(--info)]",
-  scheduled: "bg-[var(--info)]",
-  "in-progress": "bg-[var(--warning)]",
+  "in-progress": "bg-[var(--info)]",
   fixed: "bg-[var(--success)]",
-  verified: "bg-[var(--success)]",
-  disputed: "bg-[var(--critical)]",
 };
 
 export function PriorityChip({ priority }: { priority: Priority }) {
   if (priority === "critical") {
     return (
       <span className="text-[10px] font-medium px-1.5 py-0.5 bg-red-50 text-red-700 rounded ring-1 ring-red-200">
-        Critical
+        {priorityLabel.critical}
       </span>
     );
   }
   if (priority === "high") {
     return (
       <span className="text-[10px] font-medium px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded ring-1 ring-amber-200">
-        High
+        {priorityLabel.high}
       </span>
     );
   }
@@ -51,8 +43,7 @@ export function StatusChip({ status }: { status: Status }) {
 const ownerStyle: Record<Owner, string> = {
   contractor: "bg-amber-50 text-amber-700 ring-amber-200",
   homeowner: "bg-blue-50 text-blue-700 ring-blue-200",
-  supplier: "bg-violet-50 text-violet-700 ring-violet-200",
-  "third-party": "bg-zinc-100 text-zinc-700 ring-black/5",
+  "third-party": "bg-violet-50 text-violet-700 ring-violet-200",
 };
 
 export function OwnerChip({ owner }: { owner: Owner }) {

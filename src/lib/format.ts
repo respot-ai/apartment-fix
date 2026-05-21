@@ -1,10 +1,4 @@
-import type {
-  AgreementState,
-  Defect,
-  Owner,
-  Priority,
-  Status,
-} from "@/data/mock";
+import type { Defect, Owner, Priority, Status } from "@/data/mock";
 
 export const priorityRank: Record<Priority, number> = {
   critical: 0,
@@ -14,34 +8,22 @@ export const priorityRank: Record<Priority, number> = {
 };
 
 export const priorityLabel: Record<Priority, string> = {
-  critical: "Critical",
-  high: "High",
-  medium: "Medium",
-  low: "Low",
+  critical: "דחוף",
+  high: "גבוה",
+  medium: "בינוני",
+  low: "נמוך",
 };
 
 export const statusLabel: Record<Status, string> = {
-  new: "New",
-  agreed: "Agreed",
-  scheduled: "Scheduled",
-  "in-progress": "In progress",
-  fixed: "Fixed",
-  verified: "Verified",
-  disputed: "Disputed",
+  new: "חדש",
+  "in-progress": "בטיפול",
+  fixed: "הושלם",
 };
 
 export const ownerLabel: Record<Owner, string> = {
-  contractor: "Contractor",
-  homeowner: "Homeowner",
-  supplier: "Supplier",
-  "third-party": "Third party",
-};
-
-export const agreementLabel: Record<AgreementState, string> = {
-  "waiting-contractor": "Waiting for contractor",
-  "waiting-homeowner": "Waiting for homeowner",
-  locked: "Agreement locked",
-  disputed: "Disputed",
+  contractor: "קבלן",
+  homeowner: "דייר",
+  "third-party": "ספק",
 };
 
 export function sortDefects(list: Defect[]): Defect[] {
@@ -54,9 +36,9 @@ export function sortDefects(list: Defect[]): Defect[] {
 
 export function formatDate(iso: string): string {
   try {
-    return new Date(iso).toLocaleDateString(undefined, {
-      month: "short",
+    return new Date(iso).toLocaleDateString("he-IL", {
       day: "numeric",
+      month: "short",
       year: "numeric",
     });
   } catch {
@@ -66,9 +48,9 @@ export function formatDate(iso: string): string {
 
 export function shortDate(iso: string): string {
   try {
-    return new Date(iso).toLocaleDateString(undefined, {
-      month: "short",
+    return new Date(iso).toLocaleDateString("he-IL", {
       day: "numeric",
+      month: "short",
     });
   } catch {
     return iso;
