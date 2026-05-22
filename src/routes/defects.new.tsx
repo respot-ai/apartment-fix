@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import { suppliers, rooms } from "@/data/mock";
+import { useCreateDefect, useRooms, useSuppliers, useTrades } from "@/lib/api";
+import type { Owner, Priority } from "@/lib/types";
 import { Camera, ChevronDown } from "lucide-react";
 
 export const Route = createFileRoute("/defects/new")({
@@ -14,7 +15,6 @@ export const Route = createFileRoute("/defects/new")({
   component: AddDefect,
 });
 
-const trades = ["דלתות", "דלת כניסה", "אלומיניום/חלונות", "מטבח", "סניטרי", "מיזוג", "סולארי", "מולטימדיה", "חשמל", "אינסטלציה", "ריצוף", "צבע", "נגרות", "מרפסת"];
 const priorities = [
   { id: "critical", label: "דחוף" },
   { id: "high", label: "גבוה" },
@@ -29,19 +29,41 @@ const owners = [
 
 function AddDefect() {
   const navigate = useNavigate();
+  const createDefect = useCreateDefect();
+  const { data: suppliers = [] } = useSuppliers();
+  const { data: rooms = [] } = useRooms();
+  const { data: trades = [] } = useTrades();
   const [room, setRoom] = useState("");
   const [trade, setTrade] = useState("");
-  const [priority, setPriority] = useState<(typeof priorities)[number]["id"]>("medium");
-  const [owner, setOwner] = useState<(typeof owners)[number]["id"]>("contractor");
+  const [priority, setPriority] = useState<Priority>("medium");
+  const [owner, setOwner] = useState<Owner>("contractor");
   const [supplierId, setSupplierId] = useState("");
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
+  const [dueDate, setDueDate] = useState("");
 
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        navigate({ to: "/" });
+        if (!title.trim() || !room || !trade || !dueDate) return;
+        createDefect.mutate(
+          {
+            title: title.trim(),
+            room,
+            location: "",
+            trade,
+            priority,
+            owner,
+            status: "new",
+            dueDate,
+            description: desc,
+            protocolRef: "",
+            supplierId: owner === "third-party" && supplierId ? supplierId : undefined,
+            photoBefore: "",
+          },
+          { onSuccess: () => navigate({ to: "/" }) },
+        );
       }}
     >
       <ScreenHeader back="/" title="פגם חדש" subtitle="תיעוד והקצאה" />
@@ -69,10 +91,10 @@ function AddDefect() {
 
         <div className="grid grid-cols-2 gap-3">
           <Group label="אזור">
-            <Select value={room} onChange={setRoom} options={rooms} placeholder="בחר" />
+            <Select value={room} onChange={setRoom} options={rooms.map((r) => r.name)} placeholder="בחר" />
           </Group>
           <Group label="תחום">
-            <Select value={trade} onChange={setTrade} options={trades} placeholder="בחר" />
+            <Select value={trade} onChange={setTrade} options={trades.map((t) => t.name)} placeholder="בחר" />
           </Group>
         </div>
 
@@ -144,9 +166,15 @@ function AddDefect() {
         <Group label="תאריך יעד">
           <input
             type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
             className="w-full bg-card ring-1 ring-black/5 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-foreground/30"
           />
         </Group>
+
+        {createDefect.isError && (
+          <p className="text-xs text-red-700">שמירה נכשלה. נסה שוב.</p>
+        )}
 
         <div className="grid grid-cols-2 gap-2 pt-2">
           <Link
@@ -157,9 +185,10 @@ function AddDefect() {
           </Link>
           <button
             type="submit"
-            className="py-3 bg-primary text-primary-foreground rounded-xl text-sm font-medium"
+            disabled={createDefect.isPending}
+            className="py-3 bg-primary text-primary-foreground rounded-xl text-sm font-medium disabled:opacity-50"
           >
-            שמור
+            {createDefect.isPending ? "שומר…" : "שמור"}
           </button>
         </div>
       </div>

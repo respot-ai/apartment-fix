@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SuppliersIndexRouteImport } from './routes/suppliers.index'
@@ -17,6 +18,11 @@ import { Route as SuppliersIdRouteImport } from './routes/suppliers.$id'
 import { Route as DefectsNewRouteImport } from './routes/defects.new'
 import { Route as DefectsIdRouteImport } from './routes/defects.$id'
 
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReportsRoute = ReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
@@ -56,6 +62,7 @@ const DefectsIdRoute = DefectsIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/reports': typeof ReportsRoute
+  '/settings': typeof SettingsRoute
   '/defects/$id': typeof DefectsIdRoute
   '/defects/new': typeof DefectsNewRoute
   '/suppliers/$id': typeof SuppliersIdRoute
@@ -65,6 +72,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/reports': typeof ReportsRoute
+  '/settings': typeof SettingsRoute
   '/defects/$id': typeof DefectsIdRoute
   '/defects/new': typeof DefectsNewRoute
   '/suppliers/$id': typeof SuppliersIdRoute
@@ -75,6 +83,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/reports': typeof ReportsRoute
+  '/settings': typeof SettingsRoute
   '/defects/$id': typeof DefectsIdRoute
   '/defects/new': typeof DefectsNewRoute
   '/suppliers/$id': typeof SuppliersIdRoute
@@ -86,6 +95,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/reports'
+    | '/settings'
     | '/defects/$id'
     | '/defects/new'
     | '/suppliers/$id'
@@ -95,6 +105,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/reports'
+    | '/settings'
     | '/defects/$id'
     | '/defects/new'
     | '/suppliers/$id'
@@ -104,6 +115,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/reports'
+    | '/settings'
     | '/defects/$id'
     | '/defects/new'
     | '/suppliers/$id'
@@ -114,6 +126,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ReportsRoute: typeof ReportsRoute
+  SettingsRoute: typeof SettingsRoute
   DefectsIdRoute: typeof DefectsIdRoute
   DefectsNewRoute: typeof DefectsNewRoute
   SuppliersIdRoute: typeof SuppliersIdRoute
@@ -123,6 +136,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reports': {
       id: '/reports'
       path: '/reports'
@@ -178,6 +198,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ReportsRoute: ReportsRoute,
+  SettingsRoute: SettingsRoute,
   DefectsIdRoute: DefectsIdRoute,
   DefectsNewRoute: DefectsNewRoute,
   SuppliersIdRoute: SuppliersIdRoute,

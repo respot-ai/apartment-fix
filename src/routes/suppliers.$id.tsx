@@ -1,34 +1,39 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { defects, suppliers } from "@/data/mock";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useDefects, useSupplier } from "@/lib/api";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { PriorityChip, OwnerChip } from "@/components/Chips";
 import { Phone, Mail, Globe } from "lucide-react";
 
 export const Route = createFileRoute("/suppliers/$id")({
-  loader: ({ params }) => {
-    const supplier = suppliers.find((s) => s.id === params.id);
-    if (!supplier) throw notFound();
-    return { supplier };
-  },
-  head: ({ loaderData }) => ({
+  head: () => ({
     meta: [
-      { title: `${loaderData?.supplier.name ?? "ספק"} — מעקב מסירה` },
-      { name: "description", content: `פרטי קשר ופגמים משויכים ל-${loaderData?.supplier.name}.` },
+      { title: "ספק — מעקב מסירה" },
+      { name: "description", content: "פרטי קשר ופגמים משויכים" },
     ],
   }),
   component: SupplierDetail,
-  notFoundComponent: () => (
-    <div className="p-10 text-center">
-      <p className="text-sm text-muted-foreground">ספק לא נמצא.</p>
-      <Link to="/suppliers" className="text-sm font-medium underline mt-2 inline-block">
-        חזרה
-      </Link>
-    </div>
-  ),
 });
 
 function SupplierDetail() {
-  const { supplier } = Route.useLoaderData();
+  const { id } = Route.useParams();
+  const { data: supplier, isLoading, error } = useSupplier(id);
+  const { data: defects = [] } = useDefects();
+
+  if (isLoading) {
+    return <div className="p-10 text-center text-sm text-muted-foreground">טוען…</div>;
+  }
+
+  if (error || !supplier) {
+    return (
+      <div className="p-10 text-center">
+        <p className="text-sm text-muted-foreground">ספק לא נמצא.</p>
+        <Link to="/suppliers" className="text-sm font-medium underline mt-2 inline-block">
+          חזרה
+        </Link>
+      </div>
+    );
+  }
+
   const related = defects.filter((d) => d.supplierId === supplier.id);
 
   return (

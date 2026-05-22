@@ -3,6 +3,6 @@
   "buildCommand": "vite build",
   "outputDirectory": "dist/client",
   "rewrites": [
-    { "source": "/((?!assets/).*)", "destination": "/_shell.html" }
+    { "source": "/((?!assets/|api/).*)", "destination": "/_shell.html" }
   ]
 }

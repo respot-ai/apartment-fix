@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { useCreateSupplier, useTrades } from "@/lib/api";
 import { ChevronDown } from "lucide-react";
 
 export const Route = createFileRoute("/suppliers/new")({
@@ -13,10 +14,10 @@ export const Route = createFileRoute("/suppliers/new")({
   component: NewSupplier,
 });
 
-const trades = ["דלתות", "דלת כניסה", "אלומיניום/חלונות", "מטבח", "סניטרי", "מיזוג", "סולארי", "מולטימדיה", "חשמל", "אינסטלציה", "ריצוף", "צבע", "נגרות", "מרפסת"];
-
 function NewSupplier() {
   const navigate = useNavigate();
+  const createSupplier = useCreateSupplier();
+  const { data: trades = [] } = useTrades();
   const [name, setName] = useState("");
   const [domain, setDomain] = useState("");
   const [phone, setPhone] = useState("");
@@ -26,7 +27,11 @@ function NewSupplier() {
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        navigate({ to: "/suppliers" });
+        if (!name.trim() || !domain) return;
+        createSupplier.mutate(
+          { name: name.trim(), domain, phone, email },
+          { onSuccess: () => navigate({ to: "/suppliers" }) },
+        );
       }}
     >
       <ScreenHeader back="/suppliers" title="ספק חדש" subtitle="פרטי איש קשר" />
@@ -48,7 +53,7 @@ function NewSupplier() {
             >
               <option value="" disabled>בחר תחום</option>
               {trades.map((t) => (
-                <option key={t} value={t}>{t}</option>
+                <option key={t.id} value={t.name}>{t.name}</option>
               ))}
             </select>
             <ChevronDown className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
@@ -73,6 +78,10 @@ function NewSupplier() {
           />
         </Group>
 
+        {createSupplier.isError && (
+          <p className="text-xs text-red-700">שמירה נכשלה. נסה שוב.</p>
+        )}
+
         <div className="grid grid-cols-2 gap-2 pt-2">
           <Link
             to="/suppliers"
@@ -82,9 +91,10 @@ function NewSupplier() {
           </Link>
           <button
             type="submit"
-            className="py-3 bg-primary text-primary-foreground rounded-xl text-sm font-medium"
+            disabled={createSupplier.isPending}
+            className="py-3 bg-primary text-primary-foreground rounded-xl text-sm font-medium disabled:opacity-50"
           >
-            שמור ספק
+            {createSupplier.isPending ? "שומר…" : "שמור ספק"}
           </button>
         </div>
       </div>

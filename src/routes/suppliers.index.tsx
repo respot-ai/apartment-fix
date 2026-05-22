@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { suppliers, defects } from "@/data/mock";
+import { useDefects, useSuppliers } from "@/lib/api";
+import type { Supplier } from "@/lib/types";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { Phone, Mail, ChevronLeft, Plus } from "lucide-react";
 
@@ -14,7 +15,9 @@ export const Route = createFileRoute("/suppliers/")({
 });
 
 function SupplierDirectory() {
-  const grouped = suppliers.reduce<Record<string, typeof suppliers>>((acc, s) => {
+  const { data: suppliers = [], isLoading } = useSuppliers();
+  const { data: defects = [] } = useDefects();
+  const grouped = suppliers.reduce<Record<string, Supplier[]>>((acc, s) => {
     (acc[s.domain] ||= []).push(s);
     return acc;
   }, {});
@@ -35,6 +38,20 @@ function SupplierDirectory() {
         }
       />
       <div className="px-5 pb-6 space-y-6">
+        {isLoading && suppliers.length === 0 && (
+          <div className="text-center text-sm text-muted-foreground py-10">טוען…</div>
+        )}
+        {!isLoading && suppliers.length === 0 && (
+          <div className="text-center bg-card/50 ring-1 ring-dashed ring-black/10 rounded-xl py-10">
+            <p className="text-sm text-muted-foreground">אין ספקים עדיין</p>
+            <Link
+              to="/suppliers/new"
+              className="inline-block mt-3 text-sm font-medium text-primary"
+            >
+              + הוסף ספק חדש
+            </Link>
+          </div>
+        )}
         {Object.entries(grouped).map(([domain, list]) => (
           <section key={domain}>
             <h2 className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">

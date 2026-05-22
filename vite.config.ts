@@ -13,4 +13,15 @@ export default defineConfig({
   tanstackStart: {
     spa: { enabled: true },
   },
+  vite: {
+    server: {
+      proxy: {
+        "/api": {
+          target: "https://handover-psi.vercel.app",
+          changeOrigin: true,
+          secure: true,
+        },
+      },
+    },
+  },
 });

@@ -1,39 +1,48 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { defects } from "@/data/mock";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { statusLabel } from "@/lib/format";
+import { useAddComment, useDefect, useUpdateDefect } from "@/lib/api";
+import type { Status } from "@/lib/types";
 
 export const Route = createFileRoute("/defects/$id")({
-  loader: ({ params }) => {
-    const defect = defects.find((d) => d.id === params.id);
-    if (!defect) throw notFound();
-    return { defect };
-  },
-  head: ({ loaderData }) => ({
+  head: () => ({
     meta: [
-      { title: `${loaderData?.defect.title ?? "פגם"} — מעקב מסירה` },
-      { name: "description", content: loaderData?.defect.description ?? "פרטי פגם" },
+      { title: "פגם — מעקב מסירה" },
+      { name: "description", content: "פרטי פגם" },
     ],
   }),
   component: DefectDetail,
-  notFoundComponent: () => (
-    <div className="p-10 text-center">
-      <p className="text-sm text-muted-foreground">הפגם לא נמצא.</p>
-      <Link to="/" className="text-sm font-medium underline mt-2 inline-block">
-        חזרה לרשימה
-      </Link>
-    </div>
-  ),
 });
 
-const statusOptions: Array<{ id: keyof typeof statusLabel; label: string }> = [
+const statusOptions: Array<{ id: Status; label: string }> = [
   { id: "new", label: statusLabel["new"] },
   { id: "in-progress", label: statusLabel["in-progress"] },
   { id: "fixed", label: statusLabel["fixed"] },
 ];
 
 function DefectDetail() {
-  const { defect } = Route.useLoaderData() as { defect: (typeof defects)[number] };
+  const { id } = Route.useParams();
+  const { data: defect, isLoading, error } = useDefect(id);
+  const updateDefect = useUpdateDefect(id);
+  const addComment = useAddComment(id);
+  const [commentText, setCommentText] = useState("");
+
+  if (isLoading) {
+    return <div className="p-10 text-center text-sm text-muted-foreground">טוען…</div>;
+  }
+
+  if (error || !defect) {
+    return (
+      <div className="p-10 text-center">
+        <p className="text-sm text-muted-foreground">הפגם לא נמצא.</p>
+        <Link to="/" className="text-sm font-medium underline mt-2 inline-block">
+          חזרה לרשימה
+        </Link>
+      </div>
+    );
+  }
+
   const images = [defect.photoBefore, defect.photoAfter].filter(Boolean) as string[];
 
   return (
@@ -70,6 +79,10 @@ function DefectDetail() {
                 <button
                   key={s.id}
                   type="button"
+                  disabled={updateDefect.isPending}
+                  onClick={() => {
+                    if (!active) updateDefect.mutate({ status: s.id });
+                  }}
                   className={`py-2 rounded-lg text-xs font-medium transition-colors ${
                     active
                       ? "bg-primary text-primary-foreground"
@@ -118,11 +131,32 @@ function DefectDetail() {
                 </div>
               </div>
             ))}
-            <textarea
-              rows={2}
-              placeholder="הוסף הערה…"
-              className="w-full bg-card ring-1 ring-black/5 rounded-xl px-3 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-foreground/30 resize-none"
-            />
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const text = commentText.trim();
+                if (!text) return;
+                addComment.mutate(
+                  { who: "דייר", initials: "די", text },
+                  { onSuccess: () => setCommentText("") },
+                );
+              }}
+            >
+              <textarea
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                rows={2}
+                placeholder="הוסף הערה…"
+                className="w-full bg-card ring-1 ring-black/5 rounded-xl px-3 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-foreground/30 resize-none"
+              />
+              <button
+                type="submit"
+                disabled={!commentText.trim() || addComment.isPending}
+                className="mt-2 py-2 px-4 bg-primary text-primary-foreground rounded-lg text-xs font-medium disabled:opacity-50"
+              >
+                {addComment.isPending ? "שולח…" : "הוסף הערה"}
+              </button>
+            </form>
           </div>
         </section>
       </div>

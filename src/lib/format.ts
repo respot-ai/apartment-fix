@@ -1,4 +1,4 @@
-import type { Defect, Owner, Priority, Status } from "@/data/mock";
+import type { Defect, Owner, Priority, Status } from "@/lib/types";
 
 export const priorityRank: Record<Priority, number> = {
   critical: 0,

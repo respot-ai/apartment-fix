@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { defects, rooms } from "@/data/mock";
+import { useDefects, useRooms } from "@/lib/api";
 import { sortDefects, shortDate, daysUntil, statusLabel } from "@/lib/format";
 import { PriorityChip, OwnerChip } from "@/components/Chips";
-import { Plus, Filter, X } from "lucide-react";
+import { Plus, Filter, Settings, X } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -18,6 +18,8 @@ export const Route = createFileRoute("/")({
 function DefectsList() {
   const [room, setRoom] = useState<string | null>(null);
   const [showFilter, setShowFilter] = useState(false);
+  const { data: defects = [], isLoading } = useDefects();
+  const { data: rooms = [] } = useRooms();
 
   const filtered = sortDefects(defects.filter((d) => (room ? d.room === room : true)));
 
@@ -32,6 +34,13 @@ function DefectsList() {
             </p>
           </div>
           <div className="flex gap-2">
+            <Link
+              to="/settings"
+              className="size-10 grid place-items-center rounded-full ring-1 ring-black/5 bg-card"
+              aria-label="הגדרות"
+            >
+              <Settings className="size-4" />
+            </Link>
             <button
               onClick={() => setShowFilter((s) => !s)}
               className={`size-10 grid place-items-center rounded-full ring-1 ring-black/5 ${
@@ -65,15 +74,15 @@ function DefectsList() {
             </button>
             {rooms.map((r) => (
               <button
-                key={r}
-                onClick={() => setRoom(r === room ? null : r)}
+                key={r.id}
+                onClick={() => setRoom(r.name === room ? null : r.name)}
                 className={`shrink-0 px-3 py-1.5 text-xs font-medium rounded-full ${
-                  room === r
+                  room === r.name
                     ? "bg-primary text-primary-foreground"
                     : "bg-card text-muted-foreground ring-1 ring-black/5"
                 }`}
               >
-                {r}
+                {r.name}
               </button>
             ))}
           </div>
@@ -91,7 +100,10 @@ function DefectsList() {
       </header>
 
       <div className="px-5 py-4 space-y-3">
-        {filtered.length === 0 && (
+        {isLoading && filtered.length === 0 && (
+          <div className="text-center text-sm text-muted-foreground py-10">טוען…</div>
+        )}
+        {!isLoading && filtered.length === 0 && (
           <div className="text-center bg-card/50 ring-1 ring-dashed ring-black/10 rounded-xl py-10">
             <p className="text-sm text-muted-foreground">אין פגמים</p>
             <Link

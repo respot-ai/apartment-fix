@@ -1,4 +1,4 @@
-import type { Owner, Priority, Status } from "@/data/mock";
+import type { Owner, Priority, Status } from "@/lib/types";
 import { ownerLabel, priorityLabel, statusLabel } from "@/lib/format";
 
 const statusDot: Record<Status, string> = {

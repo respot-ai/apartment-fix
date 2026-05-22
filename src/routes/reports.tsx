@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { defects } from "@/data/mock";
+import { useDefects } from "@/lib/api";
 import { daysUntil } from "@/lib/format";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { FileDown, MessageCircle, ChevronLeft } from "lucide-react";
@@ -15,6 +15,7 @@ export const Route = createFileRoute("/reports")({
 });
 
 function Reports() {
+  const { data: defects = [] } = useDefects();
   const open = defects.filter((d) => d.status !== "fixed");
   const critical = open.filter((d) => d.priority === "critical").length;
   const contractor = open.filter((d) => d.owner === "contractor").length;
