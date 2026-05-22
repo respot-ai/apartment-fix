@@ -4,6 +4,7 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 import { statusLabel } from "@/lib/format";
 import { useAddComment, useDefect, useUpdateDefect } from "@/lib/api";
 import type { Status } from "@/lib/types";
+import { Pencil } from "lucide-react";
 
 export const Route = createFileRoute("/defects/$id")({
   head: () => ({
@@ -47,7 +48,21 @@ function DefectDetail() {
 
   return (
     <div className="pb-10">
-      <ScreenHeader back="/" title="פרטי פגם" subtitle={defect.room} />
+      <ScreenHeader
+        back="/"
+        title="פרטי פגם"
+        subtitle={defect.room}
+        right={
+          <Link
+            to="/edit-defect/$id"
+            params={{ id: defect.id }}
+            className="size-9 grid place-items-center rounded-full ring-1 ring-black/5 bg-card text-foreground"
+            aria-label="ערוך פגם"
+          >
+            <Pencil className="size-4" />
+          </Link>
+        }
+      />
 
       <div className="px-5 space-y-6">
         <section>
