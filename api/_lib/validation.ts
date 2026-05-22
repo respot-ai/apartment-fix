@@ -20,6 +20,7 @@ export const defectCreateSchema = z.object({
   supplierId: z.string().optional(),
   photoBefore: z.string().default(""),
   photoAfter: z.string().optional(),
+  photos: z.array(z.string()).optional(),
 });
 
 export const defectUpdateSchema = defectCreateSchema.partial();

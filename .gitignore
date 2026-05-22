@@ -37,3 +37,4 @@ dist-ssr
 scripts/handover_preview.json
 scripts/handover_images/
 scripts/__pycache__/
+scripts/handover_blob_manifest.json

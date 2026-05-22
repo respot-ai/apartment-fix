@@ -49,6 +49,7 @@ export type Defect = {
   supplierId?: string;
   photoBefore: string;
   photoAfter?: string;
+  photos?: string[];
   comments: Comment[];
   activity: ActivityEntry[];
 };

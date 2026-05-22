@@ -44,7 +44,10 @@ function DefectDetail() {
     );
   }
 
-  const images = [defect.photoBefore, defect.photoAfter].filter(Boolean) as string[];
+  const images = [
+    ...(defect.photos ?? []),
+    ...([defect.photoBefore, defect.photoAfter].filter(Boolean) as string[]),
+  ].filter((v, i, a) => v && a.indexOf(v) === i);
 
   return (
     <div className="pb-10">
@@ -126,13 +129,26 @@ function DefectDetail() {
           <section>
             <Label>תמונות</Label>
             <div className="grid grid-cols-2 gap-2 mt-2">
-              {images.map((img, i) => (
-                <div
-                  key={i}
-                  className="aspect-square rounded-xl ring-1 ring-black/5"
-                  style={{ backgroundImage: img }}
-                />
-              ))}
+              {images.map((img, i) => {
+                const isUrl = /^https?:\/\//i.test(img);
+                return isUrl ? (
+                  <a
+                    key={i}
+                    href={img}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="aspect-square rounded-xl ring-1 ring-black/5 overflow-hidden bg-secondary"
+                  >
+                    <img src={img} alt="" className="size-full object-cover" loading="lazy" />
+                  </a>
+                ) : (
+                  <div
+                    key={i}
+                    className="aspect-square rounded-xl ring-1 ring-black/5"
+                    style={{ backgroundImage: img }}
+                  />
+                );
+              })}
             </div>
           </section>
         )}
