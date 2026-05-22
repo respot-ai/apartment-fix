@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import { statusLabel } from "@/lib/format";
+import { formatDate, statusLabel } from "@/lib/format";
 import { useAddComment, useDefect, useUpdateDefect } from "@/lib/api";
 import type { Status } from "@/lib/types";
 import { Pencil } from "lucide-react";
@@ -83,6 +83,17 @@ function DefectDetail() {
           <p className="text-sm leading-relaxed text-foreground/80 text-pretty mt-1">
             {defect.description}
           </p>
+        </section>
+
+        <section className="grid grid-cols-2 gap-3">
+          <div>
+            <Label>דווח ב‑</Label>
+            <p className="text-sm mt-1">{formatDate(defect.reportedAt)}</p>
+          </div>
+          <div>
+            <Label>מקור</Label>
+            <p className="text-sm mt-1">{defect.protocolRef || "—"}</p>
+          </div>
         </section>
 
         <section>

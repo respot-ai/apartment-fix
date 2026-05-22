@@ -30,11 +30,13 @@ export function sortDefects(list: Defect[]): Defect[] {
   return [...list].sort(
     (a, b) =>
       priorityRank[a.priority] - priorityRank[b.priority] ||
-      a.dueDate.localeCompare(b.dueDate),
+      // Empty due dates sort after dated defects.
+      (a.dueDate || "￿").localeCompare(b.dueDate || "￿"),
   );
 }
 
 export function formatDate(iso: string): string {
+  if (!iso) return "—";
   try {
     return new Date(iso).toLocaleDateString("he-IL", {
       day: "numeric",
@@ -47,6 +49,7 @@ export function formatDate(iso: string): string {
 }
 
 export function shortDate(iso: string): string {
+  if (!iso) return "—";
   try {
     return new Date(iso).toLocaleDateString("he-IL", {
       day: "numeric",
@@ -58,6 +61,7 @@ export function shortDate(iso: string): string {
 }
 
 export function daysUntil(iso: string): number {
+  if (!iso) return Number.POSITIVE_INFINITY;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const d = new Date(iso);

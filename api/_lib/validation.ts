@@ -13,7 +13,7 @@ export const defectCreateSchema = z.object({
   priority: priority,
   owner: owner,
   status: status.default("new"),
-  dueDate: z.string().min(1),
+  dueDate: z.string().default(""),
   reportedAt: z.string().optional(),
   description: z.string().default(""),
   protocolRef: z.string().default(""),

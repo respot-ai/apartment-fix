@@ -248,8 +248,12 @@ function card(x, i, missingRooms, missingTrades) {
           <div class="field-value">${prio(d.priority)} · ${owner(d.owner)}</div>
         </div>
         <div class="field">
-          <div class="field-label">due / ref</div>
-          <div class="field-value">${escape(d.dueDate)} · <code>${escape(d.protocolRef)}</code></div>
+          <div class="field-label">reportedAt</div>
+          <div class="field-value">${escape(d.reportedAt) || '<span class="empty">חסר</span>'}</div>
+        </div>
+        <div class="field">
+          <div class="field-label">protocolRef</div>
+          <div class="field-value"><code>${escape(d.protocolRef)}</code></div>
         </div>
       </div>
 

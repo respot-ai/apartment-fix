@@ -35,7 +35,7 @@ import subprocess
 import sys
 import urllib.request
 from collections import Counter
-from datetime import date, timedelta
+from datetime import date
 from pathlib import Path
 
 OPEN_STATUS = "לא תקין"
@@ -52,14 +52,35 @@ ROOM_HINTS = (
 # The trailing "NN-" / "NN -" / "-NN" is a protocol section code, not part of the
 # trade name — strip it before using the value as the trade.
 CATEGORY_CODE_RE = re.compile(r"\s*\d+\s*-\s*$")
+
+# Hebrew month names, in order, for parsing the cover-page date
+# (e.g. "13 מאי 2026 (יום רביעי) | 15:20").
+HEBREW_MONTHS = {
+    "ינואר": 1, "פברואר": 2, "מרץ": 3, "מרס": 3, "אפריל": 4,
+    "מאי": 5, "יוני": 6, "יולי": 7, "אוגוסט": 8,
+    "ספטמבר": 9, "אוקטובר": 10, "נובמבר": 11, "דצמבר": 12,
+}
+DATE_RE = re.compile(
+    r"(\d{1,2})\s*("
+    + "|".join(HEBREW_MONTHS)
+    + r")\s*\(?\s*(\d{4})"
+)
 INSPECTOR_NOTE_RE = re.compile(r"^\s*:\s*(.+)$")  # trailing " : שם(תפקיד)" lines
 
 DEFAULT_PRIORITY = "medium"
 DEFAULT_OWNER = "contractor"
 DEFAULT_STATUS_API = "new"
-DEFAULT_DUE_DAYS = 30
 INSPECTOR_AUTHOR = "בקר איכות"
 INSPECTOR_INITIALS = "בא"
+
+
+def extract_protocol_date(text: str) -> str | None:
+    """Pull '13 מאי 2026' from the cover page and return an ISO date string."""
+    m = DATE_RE.search(text)
+    if not m:
+        return None
+    day, month_name, year = m.group(1), m.group(2), m.group(3)
+    return f"{int(year):04d}-{HEBREW_MONTHS[month_name]:02d}-{int(day):02d}"
 
 
 def extract_text(pdf: Path) -> str:
@@ -155,7 +176,7 @@ def _clean(s: str | None) -> str | None:
     return s.strip()
 
 
-def map_to_defect(rec: dict, today: date,
+def map_to_defect(rec: dict, reported_at: str,
                   image_paths: list[str],
                   known_rooms: set[str], known_trades: set[str]) -> tuple[dict, list[dict], dict]:
     """Return (defect_body, comments, mapping_meta).
@@ -195,7 +216,8 @@ def map_to_defect(rec: dict, today: date,
         "priority": DEFAULT_PRIORITY,
         "owner": DEFAULT_OWNER,
         "status": DEFAULT_STATUS_API,
-        "dueDate": (today + timedelta(days=DEFAULT_DUE_DAYS)).isoformat(),
+        "dueDate": "",
+        "reportedAt": reported_at,
         "description": description,
         "protocolRef": f"page {rec['page']}",
         "photoBefore": image_paths[0] if image_paths else "",
@@ -442,6 +464,13 @@ def main(argv: list[str] | None = None) -> int:
     text = extract_text(args.pdf)
     records = parse(text)
 
+    reported_at = extract_protocol_date(text)
+    if reported_at:
+        print(f"protocol date: {reported_at}")
+    else:
+        reported_at = date.today().isoformat()
+        print(f"warning: no protocol date found in PDF; falling back to today ({reported_at})", file=sys.stderr)
+
     selected = []
     for r in records:
         if r["status"] == OPEN_STATUS:
@@ -452,7 +481,6 @@ def main(argv: list[str] | None = None) -> int:
     known_rooms = fetch_lookup(args.api, "/api/rooms")
     known_trades = fetch_lookup(args.api, "/api/trades")
 
-    today = date.today()
     bodies: list[tuple[dict, dict, list[dict], dict]] = []  # (source, defect, comments, meta)
 
     image_index = _image_index(args.pdf) if args.render_images else {}
@@ -466,7 +494,7 @@ def main(argv: list[str] | None = None) -> int:
                 # the static preview can resolve it; absolute otherwise.
                 rel = img.relative_to(args.render_images.parent) if args.emit_json else img
                 image_paths.append(str(rel))
-        body, comments, meta = map_to_defect(r, today, image_paths, known_rooms, known_trades)
+        body, comments, meta = map_to_defect(r, reported_at, image_paths, known_rooms, known_trades)
         body["status"] = api_status
         bodies.append((r, body, comments, meta))
 

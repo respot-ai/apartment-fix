@@ -36,3 +36,4 @@ dist-ssr
 # Handover importer outputs (generated from local PDFs)
 scripts/handover_preview.json
 scripts/handover_images/
+scripts/__pycache__/

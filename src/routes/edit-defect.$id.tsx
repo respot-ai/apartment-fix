@@ -72,12 +72,14 @@ function EditDefectForm({ defectId, initial, suppliers, rooms, trades, updateDef
   const [title, setTitle] = useState(initial.title);
   const [desc, setDesc] = useState(initial.description);
   const [dueDate, setDueDate] = useState(initial.dueDate);
+  const [reportedAt, setReportedAt] = useState(initial.reportedAt);
+  const [protocolRef, setProtocolRef] = useState(initial.protocolRef);
 
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        if (!title.trim() || !room || !trade || !dueDate) return;
+        if (!title.trim() || !room || !trade) return;
         updateDefect.mutate(
           {
             title: title.trim(),
@@ -86,6 +88,8 @@ function EditDefectForm({ defectId, initial, suppliers, rooms, trades, updateDef
             priority,
             owner,
             dueDate,
+            reportedAt,
+            protocolRef,
             description: desc,
             supplierId: owner === "third-party" && supplierId ? supplierId : undefined,
           },
@@ -179,12 +183,31 @@ function EditDefectForm({ defectId, initial, suppliers, rooms, trades, updateDef
           </Group>
         )}
 
-        <Group label="תאריך יעד">
+        <div className="grid grid-cols-2 gap-3">
+          <Group label="תאריך יעד">
+            <input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="w-full bg-card ring-1 ring-black/5 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-foreground/30"
+            />
+          </Group>
+          <Group label="דווח ב‑">
+            <input
+              type="date"
+              value={reportedAt}
+              onChange={(e) => setReportedAt(e.target.value)}
+              className="w-full bg-card ring-1 ring-black/5 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-foreground/30"
+            />
+          </Group>
+        </div>
+
+        <Group label="מקור (פרוטוקול / עמוד)">
           <input
-            type="date"
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
-            className="w-full bg-card ring-1 ring-black/5 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-foreground/30"
+            value={protocolRef}
+            onChange={(e) => setProtocolRef(e.target.value)}
+            placeholder="לדוגמה: page 12"
+            className="w-full bg-card ring-1 ring-black/5 rounded-xl px-3 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-foreground/30"
           />
         </Group>
 

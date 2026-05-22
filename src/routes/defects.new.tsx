@@ -46,7 +46,7 @@ function AddDefect() {
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        if (!title.trim() || !room || !trade || !dueDate) return;
+        if (!title.trim() || !room || !trade) return;
         createDefect.mutate(
           {
             title: title.trim(),
