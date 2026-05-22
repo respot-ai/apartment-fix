@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<title>תצוגה מקדימה — פגמים מפרוטוקול המסירה</title>
+<style>
+  :root {
+    --bg: #f6f6f4;
+    --card: #ffffff;
+    --ink: #1a1a1a;
+    --muted: #6b6b6b;
+    --line: rgba(0,0,0,.08);
+    --warn-bg: #fff4e6;
+    --warn-ink: #92400e;
+    --new-bg: #e6fffa;
+    --new-ink: #0b6b5a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink);
+    font: 14px/1.5 -apple-system, "SF Pro Text", "Segoe UI", Arial, sans-serif; }
+
+  header { padding: 24px 20px 12px; max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 18px; margin: 0 0 4px; font-weight: 700; }
+  .sub { color: var(--muted); font-size: 12px; }
+  .counts { margin-top: 8px; font-size: 12px; color: var(--muted); }
+  .counts b { color: var(--ink); }
+
+  .banner { max-width: 1100px; margin: 8px auto 0; padding: 12px 16px;
+    border-radius: 12px; background: var(--warn-bg); color: var(--warn-ink);
+    border: 1px solid #f5d29a; font-size: 13px; }
+  .banner h3 { margin: 0 0 6px; font-size: 13px; font-weight: 700; }
+  .banner code { background: rgba(0,0,0,.06); padding: 1px 6px; border-radius: 4px; font-size: 12px; }
+
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 20px 16px;
+    border-bottom: 1px solid var(--line); position: sticky; top: 0;
+    background: var(--bg); z-index: 10; max-width: 1100px; margin: 0 auto; }
+  .filter {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 10px; border-radius: 999px;
+    background: var(--card); border: 1px solid var(--line);
+    cursor: pointer; user-select: none; font-size: 12px;
+  }
+  .filter input { margin: 0; }
+  .filter.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .filter.new::after { content: "NEW"; background: var(--new-bg); color: var(--new-ink);
+    padding: 1px 6px; border-radius: 999px; font-size: 10px; font-weight: 700; }
+  .search { flex: 1 0 200px; padding: 6px 12px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--card); font: inherit; }
+
+  .list { padding: 16px 20px 60px; display: grid; gap: 16px;
+    max-width: 1100px; margin: 0 auto; }
+
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    overflow: hidden; }
+  .body { padding: 16px; }
+  .photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 6px; padding: 0 16px 16px; }
+  .photos a { display: block; aspect-ratio: 4/3; background: #efece6;
+    border-radius: 8px; overflow: hidden; }
+  .photos img { width: 100%; height: 100%; object-fit: cover; display: block; cursor: zoom-in; }
+  .photos-empty { padding: 0 16px 16px; color: #aaa; font-size: 12px; font-style: italic; }
+
+  .head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .num { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  .field { margin-top: 12px; }
+  .field-label { font-size: 10px; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .field-value { font-size: 14px; }
+  .field-value.title { font-size: 16px; font-weight: 600; text-wrap: balance; }
+  .field-value.desc { color: #333; }
+  .field-value.empty { color: #aaa; font-style: italic; }
+
+  .meta-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+  @media (max-width: 540px) {
+    .meta-row { grid-template-columns: 1fr; }
+    .card { grid-template-columns: 1fr; }
+    .img { aspect-ratio: 4/3; }
+  }
+
+  .pill { display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 999px; font-size: 11px; }
+  .pill.ok { background: #eef5ee; color: #2f6f3a; }
+  .pill.new { background: var(--new-bg); color: var(--new-ink); font-weight: 700; }
+
+  .comment { margin-top: 6px; padding: 8px 10px; background: #f7f5f0;
+    border-radius: 10px; font-size: 12px; }
+  .comment .who { font-weight: 600; }
+
+  details.source { margin-top: 12px; border-top: 1px dashed var(--line); padding-top: 10px; }
+  details.source summary { cursor: pointer; font-size: 11px; color: var(--muted);
+    list-style: none; user-select: none; }
+  details.source summary::-webkit-details-marker { display: none; }
+  details.source[open] summary { margin-bottom: 8px; }
+  .src-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px;
+    font-size: 12px; color: var(--muted); }
+  .src-grid b { color: var(--ink); font-weight: 500; }
+</style>
+</head>
+<body>
+<header>
+  <h1>תצוגה מקדימה — פגמים מהפרוטוקול</h1>
+  <div class="sub">המידע שיתווסף לאפליקציה דרך <code>POST /api/defects</code> (כל "לא תקין" בפרוטוקול)</div>
+  <div class="counts" id="counts"></div>
+  <div id="missing"></div>
+</header>
+
+<div class="filters" id="filters">
+  <input class="search" id="q" placeholder="חיפוש בכותרת או בתיאור…" />
+</div>
+
+<div class="list" id="list"></div>
+
+<script>
+const DATA_URL = "handover_preview.json";
+
+async function load() {
+  const res = await fetch(DATA_URL);
+  if (!res.ok) {
+    document.getElementById("list").innerHTML =
+      `<div class="card body">לא ניתן לטעון את ${DATA_URL}. הרץ <code>scripts/import_handover.py … --emit-json scripts/handover_preview.json</code> ופתח דרך שרת סטטי.</div>`;
+    return;
+  }
+  render(await res.json());
+}
+
+const state = { rooms: new Set(), trades: new Set(), q: "", showMissingOnly: false };
+
+function render(data) {
+  const items = data.defects;
+  const missingRooms = new Set(data.lookups.missing_rooms);
+  const missingTrades = new Set(data.lookups.missing_trades);
+
+  // Missing-lookups banner
+  if (missingRooms.size || missingTrades.size) {
+    const m = document.getElementById("missing");
+    const lines = [];
+    if (missingRooms.size) {
+      lines.push(`<div><b>חדרים חדשים שאינם ב‑<code>/api/rooms</code>:</b> ${[...missingRooms].map(r => `<code>${escape(r)}</code>`).join(" · ")}</div>`);
+    }
+    if (missingTrades.size) {
+      lines.push(`<div><b>תחומים חדשים שאינם ב‑<code>/api/trades</code>:</b> ${[...missingTrades].map(t => `<code>${escape(t)}</code>`).join(" · ")}</div>`);
+    }
+    m.innerHTML = `<div class="banner"><h3>נדרשת הוספה ללוקאפים לפני הייבוא</h3>${lines.join("")}</div>`;
+  }
+
+  // Filters
+  const rooms = uniq(items.map(x => x.defect.room));
+  const trades = uniq(items.map(x => x.defect.trade));
+  const filtersEl = document.getElementById("filters");
+
+  function makeChip(kind, label, isNew) {
+    const count = items.filter(x => x.defect[kind === "rooms" ? "room" : "trade"] === label).length;
+    const el = document.createElement("label");
+    el.className = "filter" + (isNew ? " new" : "");
+    el.innerHTML = `<input type="checkbox"> ${escape(label)} <span class="num">(${count})</span>`;
+    el.querySelector("input").addEventListener("change", e => {
+      const set = state[kind];
+      if (e.target.checked) set.add(label); else set.delete(label);
+      el.classList.toggle("active", e.target.checked);
+      paint();
+    });
+    return el;
+  }
+  rooms.forEach(r => filtersEl.appendChild(makeChip("rooms", r, missingRooms.has(r))));
+  trades.forEach(t => filtersEl.appendChild(makeChip("trades", t, missingTrades.has(t))));
+
+  document.getElementById("q").addEventListener("input", e => {
+    state.q = e.target.value.trim();
+    paint();
+  });
+
+  function paint() {
+    const filtered = items.filter(x => {
+      if (state.rooms.size && !state.rooms.has(x.defect.room)) return false;
+      if (state.trades.size && !state.trades.has(x.defect.trade)) return false;
+      if (state.q) {
+        const hay = `${x.defect.title} ${x.defect.description}`.toLowerCase();
+        if (!hay.includes(state.q.toLowerCase())) return false;
+      }
+      return true;
+    });
+
+    document.getElementById("counts").innerHTML =
+      `מציג <b>${filtered.length}</b> מתוך <b>${items.length}</b> · ` +
+      `חדרים: <b>${uniq(filtered.map(x=>x.defect.room)).length}</b> · ` +
+      `תחומים: <b>${uniq(filtered.map(x=>x.defect.trade)).length}</b>`;
+
+    const list = document.getElementById("list");
+    list.innerHTML = "";
+    filtered.forEach((x, i) => list.appendChild(card(x, i, missingRooms, missingTrades)));
+  }
+
+  paint();
+}
+
+function card(x, i, missingRooms, missingTrades) {
+  const d = x.defect, s = x.source, cs = x.comments || [];
+  const photos = d.photos || (d.photoBefore ? [d.photoBefore] : []);
+
+  const el = document.createElement("div");
+  el.className = "card";
+
+  const roomPill = missingRooms.has(d.room)
+    ? `<span class="pill new">NEW: ${escape(d.room)}</span>`
+    : `<span class="pill ok">${escape(d.room)}</span>`;
+  const tradePill = missingTrades.has(d.trade)
+    ? `<span class="pill new">NEW: ${escape(d.trade)}</span>`
+    : `<span class="pill ok">${escape(d.trade)}</span>`;
+
+  const commentsHtml = cs.length
+    ? cs.map(c => `<div class="comment"><span class="who">${escape(c.who)}:</span> ${escape(c.text)}</div>`).join("")
+    : `<div class="field-value empty">— אין הערות —</div>`;
+
+  el.innerHTML = `
+    <div class="body">
+      <div class="head">
+        <div></div>
+        <div class="num">#${i+1} · עמוד ${s.page} · ${escape(s.status)}</div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">title (כותרת)</div>
+        <div class="field-value title">${escape(d.title) || '<span class="empty">חסר</span>'}</div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">description (תיאור)</div>
+        <div class="field-value desc">${escape(d.description) || '<span class="empty">חסר</span>'}</div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">comments (${cs.length})</div>
+        ${commentsHtml}
+      </div>
+
+      <div class="meta-row">
+        <div class="field">
+          <div class="field-label">room</div>
+          <div class="field-value">${roomPill}</div>
+        </div>
+        <div class="field">
+          <div class="field-label">trade</div>
+          <div class="field-value">${tradePill}</div>
+        </div>
+        <div class="field">
+          <div class="field-label">priority / owner</div>
+          <div class="field-value">${prio(d.priority)} · ${owner(d.owner)}</div>
+        </div>
+        <div class="field">
+          <div class="field-label">due / ref</div>
+          <div class="field-value">${escape(d.dueDate)} · <code>${escape(d.protocolRef)}</code></div>
+        </div>
+      </div>
+
+      <details class="source">
+        <summary>הצג מקור מהפרוטוקול ▾</summary>
+        <div class="src-grid">
+          <div>מקור · חדר: <b>${escape(s.room || "—")}</b></div>
+          <div>מקור · קטגוריה: <b>${escape(s.category || "—")}</b></div>
+          <div>מקור · פריט: <b>${escape(s.item || "—")}</b></div>
+          <div>מקור · הערה: <b>${escape(s.note || "—")}</b></div>
+          <div>מקור · בקר: <b>${escape(s.inspector || "—")}</b></div>
+          <div>מקור · סטטוס: <b>${escape(s.status)}</b></div>
+        </div>
+      </details>
+    </div>
+    ${photos.length
+      ? `<div class="photos">${photos.map(p =>
+          `<a href="${escape(p)}" target="_blank"><img src="${escape(p)}" loading="lazy" alt="photo"></a>`
+        ).join("")}</div>`
+      : `<div class="photos-empty">— אין תמונות בעמוד זה —</div>`}
+  `;
+  return el;
+}
+
+function uniq(values) { return Array.from(new Set(values)).sort(); }
+function escape(s) { return (s ?? "").toString().replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function prio(p) { return ({critical:"דחוף", high:"גבוה", medium:"בינוני", low:"נמוך"})[p] || p; }
+function owner(o) { return ({contractor:"קבלן", homeowner:"דייר", "third-party":"ספק"})[o] || o; }
+
+load();
+</script>
+</body>
+</html>
