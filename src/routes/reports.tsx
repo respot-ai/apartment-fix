@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useRef } from "react";
 import {
   useDefects,
@@ -9,6 +9,14 @@ import {
 import { daysUntil, formatDate } from "@/lib/format";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { FileDown, FileText, MessageCircle, ChevronLeft, Trash2, Upload } from "lucide-react";
+import type { Owner, Priority, Status } from "@/lib/types";
+
+type DefectsSearch = {
+  owner?: Owner;
+  priority?: Priority;
+  status?: Status;
+  overdue?: boolean;
+};
 
 export const Route = createFileRoute("/reports")({
   head: () => ({
@@ -30,13 +38,19 @@ function Reports() {
   const overdue = open.filter((d) => daysUntil(d.dueDate) < 0).length;
   const completed = defects.filter((d) => d.status === "fixed").length;
 
-  const reports = [
-    { label: "פגמים פתוחים לפי עדיפות", count: open.length, sub: `${critical} דחופים` },
-    { label: "באחריות הקבלן", count: contractor, sub: "ממתינים לתיקון" },
-    { label: "באחריות הדייר", count: homeowner, sub: "טיפול עצמי" },
-    { label: "באחריות ספק", count: third, sub: "צד שלישי" },
-    { label: "פריטים באיחור", count: overdue, sub: "עברו את תאריך היעד", critical: true },
-    { label: "הושלמו", count: completed, sub: "עם הוכחת תיקון" },
+  const reports: {
+    label: string;
+    count: number;
+    sub: string;
+    critical?: boolean;
+    search: DefectsSearch;
+  }[] = [
+    { label: "פגמים פתוחים לפי עדיפות", count: open.length, sub: `${critical} דחופים`, search: {} },
+    { label: "באחריות הקבלן", count: contractor, sub: "ממתינים לתיקון", search: { owner: "contractor" } },
+    { label: "באחריות הדייר", count: homeowner, sub: "טיפול עצמי", search: { owner: "homeowner" } },
+    { label: "באחריות ספק", count: third, sub: "צד שלישי", search: { owner: "third-party" } },
+    { label: "פריטים באיחור", count: overdue, sub: "עברו את תאריך היעד", critical: true, search: { overdue: true } },
+    { label: "הושלמו", count: completed, sub: "עם הוכחת תיקון", search: { status: "fixed" } },
   ];
 
   return (
@@ -68,9 +82,11 @@ function Reports() {
           </h2>
           <div className="space-y-2">
             {reports.map((r) => (
-              <button
+              <Link
                 key={r.label}
-                className="w-full flex items-center gap-3 p-3 bg-card ring-1 ring-black/5 rounded-xl text-right"
+                to="/"
+                search={r.search}
+                className="w-full flex items-center gap-3 p-3 bg-card ring-1 ring-black/5 rounded-xl text-right active:scale-[0.99] transition-transform"
               >
                 <div
                   className={`size-12 grid place-items-center rounded-lg text-base font-semibold ${
@@ -86,7 +102,7 @@ function Reports() {
                   <p className="text-xs text-muted-foreground">{r.sub}</p>
                 </div>
                 <ChevronLeft className="size-4 text-muted-foreground" />
-              </button>
+              </Link>
             ))}
           </div>
         </div>

@@ -1,9 +1,32 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useDefects, useRooms } from "@/lib/api";
-import { sortDefects, shortDate, daysUntil, statusLabel } from "@/lib/format";
+import {
+  sortDefects,
+  shortDate,
+  daysUntil,
+  statusLabel,
+  ownerLabel,
+  priorityLabel,
+} from "@/lib/format";
+import type { Owner, Priority, Status } from "@/lib/types";
 import { PriorityChip, OwnerChip } from "@/components/Chips";
 import { Plus, Filter, Settings, X } from "lucide-react";
+
+type DefectsSearch = {
+  owner?: Owner;
+  priority?: Priority;
+  status?: Status;
+  overdue?: boolean;
+};
+
+const OWNERS: readonly Owner[] = ["contractor", "homeowner", "third-party"];
+const PRIORITIES: readonly Priority[] = ["critical", "high", "medium", "low"];
+const STATUSES: readonly Status[] = ["new", "in-progress", "fixed"];
+
+function asOneOf<T extends string>(values: readonly T[], v: unknown): T | undefined {
+  return typeof v === "string" && (values as readonly string[]).includes(v) ? (v as T) : undefined;
+}
 
 const SCROLL_KEY = "defects-list-scroll";
 
@@ -24,15 +47,27 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "רשימת כל הפגמים בדירה לפי עדיפות ואזור." },
     ],
   }),
+  validateSearch: (search: Record<string, unknown>): DefectsSearch => ({
+    owner: asOneOf(OWNERS, search.owner),
+    priority: asOneOf(PRIORITIES, search.priority),
+    status: asOneOf(STATUSES, search.status),
+    overdue: search.overdue === true || search.overdue === "true" ? true : undefined,
+  }),
   component: DefectsList,
 });
 
 function DefectsList() {
+  const navigate = useNavigate({ from: "/" });
+  const search = Route.useSearch();
+  const { owner: ownerFilter, priority: priorityFilter, status: statusFilter, overdue: overdueFilter } = search;
   const [room, setRoom] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [showFilter, setShowFilter] = useState(false);
   const { data: defects = [], isLoading } = useDefects();
   const { data: rooms = [] } = useRooms();
+
+  const clearSearchKey = (key: keyof DefectsSearch) =>
+    navigate({ search: (prev) => ({ ...prev, [key]: undefined }) });
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const scrollParentRef = useRef<HTMLElement | null>(null);
   const restoredRef = useRef(false);
@@ -81,12 +116,17 @@ function DefectsList() {
     return sortDefects(
       defects.filter((d) => {
         if (room && d.room !== room) return false;
+        if (ownerFilter && d.owner !== ownerFilter) return false;
+        if (priorityFilter && d.priority !== priorityFilter) return false;
+        if (statusFilter && d.status !== statusFilter) return false;
+        if (overdueFilter && !(daysUntil(d.dueDate) < 0 && d.status !== "fixed")) return false;
         if (matchIds && !matchIds.has(d.id)) return false;
         return true;
       }),
     );
-  }, [defects, room, trimmedQuery, searchIndex]);
-  const hasActiveFilter = !!room || !!trimmedQuery;
+  }, [defects, room, trimmedQuery, searchIndex, ownerFilter, priorityFilter, statusFilter, overdueFilter]);
+  const hasActiveFilter =
+    !!room || !!trimmedQuery || !!ownerFilter || !!priorityFilter || !!statusFilter || !!overdueFilter;
 
   return (
     <div>
@@ -168,6 +208,42 @@ function DefectsList() {
                 className="flex items-center gap-1 text-xs font-medium text-foreground bg-card ring-1 ring-black/5 rounded-full px-2.5 py-1"
               >
                 <span>אזור: {room}</span>
+                <X className="size-3" />
+              </button>
+            )}
+            {ownerFilter && (
+              <button
+                onClick={() => clearSearchKey("owner")}
+                className="flex items-center gap-1 text-xs font-medium text-foreground bg-card ring-1 ring-black/5 rounded-full px-2.5 py-1"
+              >
+                <span>אחראי: {ownerLabel[ownerFilter]}</span>
+                <X className="size-3" />
+              </button>
+            )}
+            {priorityFilter && (
+              <button
+                onClick={() => clearSearchKey("priority")}
+                className="flex items-center gap-1 text-xs font-medium text-foreground bg-card ring-1 ring-black/5 rounded-full px-2.5 py-1"
+              >
+                <span>עדיפות: {priorityLabel[priorityFilter]}</span>
+                <X className="size-3" />
+              </button>
+            )}
+            {statusFilter && (
+              <button
+                onClick={() => clearSearchKey("status")}
+                className="flex items-center gap-1 text-xs font-medium text-foreground bg-card ring-1 ring-black/5 rounded-full px-2.5 py-1"
+              >
+                <span>סטטוס: {statusLabel[statusFilter]}</span>
+                <X className="size-3" />
+              </button>
+            )}
+            {overdueFilter && (
+              <button
+                onClick={() => clearSearchKey("overdue")}
+                className="flex items-center gap-1 text-xs font-medium text-foreground bg-card ring-1 ring-black/5 rounded-full px-2.5 py-1"
+              >
+                <span>באיחור</span>
                 <X className="size-3" />
               </button>
             )}
