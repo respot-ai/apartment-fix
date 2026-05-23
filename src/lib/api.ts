@@ -30,9 +30,15 @@ export type SupplierPatch = Partial<SupplierInput>;
 export type CommentInput = { who: string; initials?: string; text: string; at?: string };
 
 const defectsKey = ["defects"] as const;
-const defectKey = (id: string) => ["defects", id] as const;
 const suppliersKey = ["suppliers"] as const;
-const supplierKey = (id: string) => ["suppliers", id] as const;
+
+const persistentListOptions = {
+  staleTime: Infinity,
+  gcTime: Infinity,
+  refetchOnWindowFocus: false,
+  refetchOnReconnect: false,
+  refetchOnMount: false,
+} as const;
 
 // --- Defects ---
 
@@ -40,15 +46,14 @@ export function useDefects() {
   return useQuery({
     queryKey: defectsKey,
     queryFn: () => request<Defect[]>("/api/defects"),
+    ...persistentListOptions,
   });
 }
 
-export function useDefect(id: string | undefined) {
-  return useQuery({
-    queryKey: id ? defectKey(id) : ["defects", "missing"],
-    queryFn: () => request<Defect>(`/api/defects/${id}`),
-    enabled: !!id,
-  });
+function replaceInList(qc: ReturnType<typeof useQueryClient>, doc: Defect) {
+  qc.setQueryData<Defect[]>(defectsKey, (prev) =>
+    prev ? prev.map((d) => (d.id === doc.id ? doc : d)) : prev,
+  );
 }
 
 export function useCreateDefect() {
@@ -56,7 +61,9 @@ export function useCreateDefect() {
   return useMutation({
     mutationFn: (input: DefectInput) =>
       request<Defect>("/api/defects", { method: "POST", body: JSON.stringify(input) }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: defectsKey }),
+    onSuccess: (doc) => {
+      qc.setQueryData<Defect[]>(defectsKey, (prev) => (prev ? [...prev, doc] : [doc]));
+    },
   });
 }
 
@@ -65,10 +72,7 @@ export function useUpdateDefect(id: string) {
   return useMutation({
     mutationFn: (patch: DefectPatch) =>
       request<Defect>(`/api/defects/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
-    onSuccess: (doc) => {
-      qc.setQueryData(defectKey(id), doc);
-      qc.invalidateQueries({ queryKey: defectsKey });
-    },
+    onSuccess: (doc) => replaceInList(qc, doc),
   });
 }
 
@@ -76,7 +80,11 @@ export function useDeleteDefect() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => request<void>(`/api/defects/${id}`, { method: "DELETE" }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: defectsKey }),
+    onSuccess: (_, id) => {
+      qc.setQueryData<Defect[]>(defectsKey, (prev) =>
+        prev ? prev.filter((d) => d.id !== id) : prev,
+      );
+    },
   });
 }
 
@@ -88,10 +96,7 @@ export function useAddComment(id: string) {
         method: "POST",
         body: JSON.stringify(input),
       }),
-    onSuccess: (doc) => {
-      qc.setQueryData(defectKey(id), doc);
-      qc.invalidateQueries({ queryKey: defectsKey });
-    },
+    onSuccess: (doc) => replaceInList(qc, doc),
   });
 }
 
@@ -103,10 +108,7 @@ export function useUpdateComment(id: string) {
         method: "PATCH",
         body: JSON.stringify({ text }),
       }),
-    onSuccess: (doc) => {
-      qc.setQueryData(defectKey(id), doc);
-      qc.invalidateQueries({ queryKey: defectsKey });
-    },
+    onSuccess: (doc) => replaceInList(qc, doc),
   });
 }
 
@@ -115,10 +117,7 @@ export function useDeleteComment(id: string) {
   return useMutation({
     mutationFn: (commentId: string) =>
       request<Defect>(`/api/defects/${id}/comments/${commentId}`, { method: "DELETE" }),
-    onSuccess: (doc) => {
-      qc.setQueryData(defectKey(id), doc);
-      qc.invalidateQueries({ queryKey: defectsKey });
-    },
+    onSuccess: (doc) => replaceInList(qc, doc),
   });
 }
 
@@ -145,6 +144,7 @@ export function useProtocols() {
   return useQuery({
     queryKey: protocolsKey,
     queryFn: () => request<Protocol[]>("/api/protocols"),
+    ...persistentListOptions,
   });
 }
 
@@ -162,7 +162,9 @@ export function useUploadProtocol() {
         body: JSON.stringify({ name: file.name, url: blob.url, size: file.size }),
       });
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: protocolsKey }),
+    onSuccess: (doc) => {
+      qc.setQueryData<Protocol[]>(protocolsKey, (prev) => (prev ? [...prev, doc] : [doc]));
+    },
   });
 }
 
@@ -170,7 +172,11 @@ export function useDeleteProtocol() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => request<void>(`/api/protocols/${id}`, { method: "DELETE" }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: protocolsKey }),
+    onSuccess: (_, id) => {
+      qc.setQueryData<Protocol[]>(protocolsKey, (prev) =>
+        prev ? prev.filter((p) => p.id !== id) : prev,
+      );
+    },
   });
 }
 
@@ -180,15 +186,14 @@ export function useSuppliers() {
   return useQuery({
     queryKey: suppliersKey,
     queryFn: () => request<Supplier[]>("/api/suppliers"),
+    ...persistentListOptions,
   });
 }
 
-export function useSupplier(id: string | undefined) {
-  return useQuery({
-    queryKey: id ? supplierKey(id) : ["suppliers", "missing"],
-    queryFn: () => request<Supplier>(`/api/suppliers/${id}`),
-    enabled: !!id,
-  });
+function replaceSupplierInList(qc: ReturnType<typeof useQueryClient>, doc: Supplier) {
+  qc.setQueryData<Supplier[]>(suppliersKey, (prev) =>
+    prev ? prev.map((s) => (s.id === doc.id ? doc : s)) : prev,
+  );
 }
 
 export function useCreateSupplier() {
@@ -196,7 +201,9 @@ export function useCreateSupplier() {
   return useMutation({
     mutationFn: (input: SupplierInput) =>
       request<Supplier>("/api/suppliers", { method: "POST", body: JSON.stringify(input) }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: suppliersKey }),
+    onSuccess: (doc) => {
+      qc.setQueryData<Supplier[]>(suppliersKey, (prev) => (prev ? [...prev, doc] : [doc]));
+    },
   });
 }
 
@@ -208,10 +215,7 @@ export function useUpdateSupplier(id: string) {
         method: "PATCH",
         body: JSON.stringify(patch),
       }),
-    onSuccess: (doc) => {
-      qc.setQueryData(supplierKey(id), doc);
-      qc.invalidateQueries({ queryKey: suppliersKey });
-    },
+    onSuccess: (doc) => replaceSupplierInList(qc, doc),
   });
 }
 
@@ -219,7 +223,11 @@ export function useDeleteSupplier() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => request<void>(`/api/suppliers/${id}`, { method: "DELETE" }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: suppliersKey }),
+    onSuccess: (_, id) => {
+      qc.setQueryData<Supplier[]>(suppliersKey, (prev) =>
+        prev ? prev.filter((s) => s.id !== id) : prev,
+      );
+    },
   });
 }
 
@@ -232,6 +240,7 @@ function makeLookupHooks(resource: "rooms" | "trades") {
       return useQuery({
         queryKey: listKey,
         queryFn: () => request<Lookup[]>(`/api/${resource}`),
+        ...persistentListOptions,
       });
     },
     useCreate() {
@@ -242,14 +251,20 @@ function makeLookupHooks(resource: "rooms" | "trades") {
             method: "POST",
             body: JSON.stringify({ name }),
           }),
-        onSuccess: () => qc.invalidateQueries({ queryKey: listKey }),
+        onSuccess: (doc) => {
+          qc.setQueryData<Lookup[]>(listKey, (prev) => (prev ? [...prev, doc] : [doc]));
+        },
       });
     },
     useDelete() {
       const qc = useQueryClient();
       return useMutation({
         mutationFn: (id: string) => request<void>(`/api/${resource}/${id}`, { method: "DELETE" }),
-        onSuccess: () => qc.invalidateQueries({ queryKey: listKey }),
+        onSuccess: (_, id) => {
+          qc.setQueryData<Lookup[]>(listKey, (prev) =>
+            prev ? prev.filter((l) => l.id !== id) : prev,
+          );
+        },
       });
     },
   };

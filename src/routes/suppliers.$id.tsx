@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useDefects, useSupplier } from "@/lib/api";
+import { useDefects, useSuppliers } from "@/lib/api";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { PriorityChip, OwnerChip } from "@/components/Chips";
 import { Phone, Mail, Globe } from "lucide-react";
@@ -16,8 +16,9 @@ export const Route = createFileRoute("/suppliers/$id")({
 
 function SupplierDetail() {
   const { id } = Route.useParams();
-  const { data: supplier, isLoading, error } = useSupplier(id);
+  const { data: suppliers = [], isLoading, error } = useSuppliers();
   const { data: defects = [] } = useDefects();
+  const supplier = suppliers.find((s) => s.id === id);
 
   if (isLoading) {
     return <div className="p-10 text-center text-sm text-muted-foreground">טוען…</div>;

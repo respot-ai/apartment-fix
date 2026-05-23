@@ -6,7 +6,6 @@ import { OwnerChip, PriorityChip } from "@/components/Chips";
 import { formatDate, sortDefects, statusLabel } from "@/lib/format";
 import {
   useAddComment,
-  useDefect,
   useDefects,
   useDeleteComment,
   useSuppliers,
@@ -31,8 +30,8 @@ const statusOptions: Array<{ id: Status; label: string }> = [
 
 function DefectDetail() {
   const { id } = Route.useParams();
-  const { data: defect, isLoading, error } = useDefect(id);
-  const { data: allDefects = [] } = useDefects();
+  const { data: allDefects = [], isLoading, error } = useDefects();
+  const defect = allDefects.find((d) => d.id === id);
   const updateDefect = useUpdateDefect(id);
   const addComment = useAddComment(id);
   const updateComment = useUpdateComment(id);

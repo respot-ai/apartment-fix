@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import {
-  useDefect,
+  useDefects,
   useRooms,
   useSuppliers,
   useTrades,
@@ -37,7 +37,8 @@ const owners = [
 function EditDefect() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
-  const { data: defect, isLoading, error } = useDefect(id);
+  const { data: allDefects = [], isLoading, error } = useDefects();
+  const defect = allDefects.find((d) => d.id === id);
   const updateDefect = useUpdateDefect(id);
   const { data: suppliers = [] } = useSuppliers();
   const { data: rooms = [] } = useRooms();
@@ -72,7 +73,7 @@ function EditDefect() {
 
 type EditFormProps = {
   defectId: string;
-  initial: NonNullable<ReturnType<typeof useDefect>["data"]>;
+  initial: NonNullable<ReturnType<typeof useDefects>["data"]>[number];
   suppliers: ReturnType<typeof useSuppliers>["data"] extends infer T
     ? Exclude<T, undefined>
     : never;
