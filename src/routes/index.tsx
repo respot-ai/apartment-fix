@@ -1,9 +1,21 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useDefects, useRooms } from "@/lib/api";
 import { sortDefects, shortDate, daysUntil, statusLabel } from "@/lib/format";
 import { PriorityChip, OwnerChip } from "@/components/Chips";
 import { Plus, Filter, Settings, X } from "lucide-react";
+
+const SCROLL_KEY = "defects-list-scroll";
+
+function findScrollParent(el: HTMLElement | null): HTMLElement | null {
+  let node = el?.parentElement ?? null;
+  while (node) {
+    const style = getComputedStyle(node);
+    if (/(auto|scroll|overlay)/.test(style.overflowY)) return node;
+    node = node.parentElement;
+  }
+  return null;
+}
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -21,6 +33,31 @@ function DefectsList() {
   const [showFilter, setShowFilter] = useState(false);
   const { data: defects = [], isLoading } = useDefects();
   const { data: rooms = [] } = useRooms();
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const scrollParentRef = useRef<HTMLElement | null>(null);
+  const restoredRef = useRef(false);
+
+  useEffect(() => {
+    const parent = findScrollParent(sentinelRef.current);
+    if (!parent) return;
+    scrollParentRef.current = parent;
+    const onScroll = () => {
+      try {
+        sessionStorage.setItem(SCROLL_KEY, String(parent.scrollTop));
+      } catch {}
+    };
+    parent.addEventListener("scroll", onScroll, { passive: true });
+    return () => parent.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (restoredRef.current) return;
+    const parent = scrollParentRef.current;
+    if (!parent || isLoading || defects.length === 0) return;
+    const saved = Number(sessionStorage.getItem(SCROLL_KEY) || 0);
+    if (saved > 0) parent.scrollTop = saved;
+    restoredRef.current = true;
+  }, [isLoading, defects.length]);
 
   const roomsWithDefects = useMemo(() => {
     const used = new Set(defects.map((d) => d.room));
@@ -39,6 +76,7 @@ function DefectsList() {
 
   return (
     <div>
+      <div ref={sentinelRef} className="hidden" aria-hidden />
       <header className="px-5 pt-10 pb-3 bg-surface sticky top-0 z-10">
         <div className="flex items-center justify-between mb-3">
           <div>

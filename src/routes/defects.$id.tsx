@@ -1,19 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ImageViewerDialog } from "@/components/ImageViewerDialog";
 import { OwnerChip, PriorityChip } from "@/components/Chips";
-import { formatDate, statusLabel } from "@/lib/format";
+import { formatDate, sortDefects, statusLabel } from "@/lib/format";
 import {
   useAddComment,
   useDefect,
+  useDefects,
   useDeleteComment,
   useSuppliers,
   useUpdateComment,
   useUpdateDefect,
 } from "@/lib/api";
 import { THIRD_PARTY_OWNER_ID, type Status } from "@/lib/types";
-import { Check, Copy, Pencil, Trash2, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Copy, Pencil, Trash2, X } from "lucide-react";
 
 export const Route = createFileRoute("/defects/$id")({
   head: () => ({
@@ -31,11 +32,22 @@ const statusOptions: Array<{ id: Status; label: string }> = [
 function DefectDetail() {
   const { id } = Route.useParams();
   const { data: defect, isLoading, error } = useDefect(id);
+  const { data: allDefects = [] } = useDefects();
   const updateDefect = useUpdateDefect(id);
   const addComment = useAddComment(id);
   const updateComment = useUpdateComment(id);
   const deleteComment = useDeleteComment(id);
   const { data: suppliers = [] } = useSuppliers();
+
+  const { prev, next } = useMemo(() => {
+    const sorted = sortDefects(allDefects);
+    const idx = sorted.findIndex((d) => d.id === id);
+    if (idx === -1) return { prev: null, next: null };
+    return {
+      prev: idx > 0 ? sorted[idx - 1] : null,
+      next: idx < sorted.length - 1 ? sorted[idx + 1] : null,
+    };
+  }, [allDefects, id]);
   const [commentText, setCommentText] = useState("");
   const [viewerSrc, setViewerSrc] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -332,32 +344,69 @@ function DefectDetail() {
           </div>
         </section>
 
-        {defect.shortId && <ShortIdRow shortId={defect.shortId} />}
+        <NavRow prev={prev?.id ?? null} next={next?.id ?? null} shortId={defect.shortId} />
       </div>
     </div>
   );
 }
 
-function ShortIdRow({ shortId }: { shortId: string }) {
+function NavRow({
+  prev,
+  next,
+  shortId,
+}: {
+  prev: string | null;
+  next: string | null;
+  shortId?: string;
+}) {
   const [copied, setCopied] = useState(false);
   return (
-    <div className="pt-2 flex items-center justify-center gap-2 text-muted-foreground">
-      <span className="text-[11px] uppercase tracking-widest">מזהה</span>
-      <span className="text-sm font-mono font-semibold text-foreground/80 tabular-nums">
-        {shortId}
-      </span>
-      <button
-        type="button"
-        onClick={() => {
-          void navigator.clipboard?.writeText(shortId);
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1200);
-        }}
-        className="grid place-items-center size-7 rounded-full hover:bg-secondary hover:text-foreground"
-        aria-label="העתק מזהה"
-      >
-        {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
-      </button>
+    <div className="pt-4 flex items-center justify-center gap-3 text-muted-foreground">
+      {prev ? (
+        <Link
+          to="/defects/$id"
+          params={{ id: prev }}
+          className="grid place-items-center size-9 rounded-full ring-1 ring-black/5 bg-card hover:text-foreground"
+          aria-label="הקודם"
+        >
+          <ChevronRight className="size-4" />
+        </Link>
+      ) : (
+        <div className="size-9" />
+      )}
+
+      {shortId && (
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm font-mono font-semibold text-foreground/80 tabular-nums">
+            {shortId}
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              void navigator.clipboard?.writeText(shortId);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 1200);
+            }}
+            className="grid place-items-center size-7 rounded-full hover:bg-secondary hover:text-foreground"
+            aria-label="העתק מזהה"
+          >
+            {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+          </button>
+        </div>
+      )}
+
+      {next ? (
+        <Link
+          to="/defects/$id"
+          params={{ id: next }}
+          className="grid place-items-center size-9 rounded-full ring-1 ring-black/5 bg-card hover:text-foreground"
+          aria-label="הבא"
+        >
+          <ChevronLeft className="size-4" />
+        </Link>
+      ) : (
+        <div className="size-9" />
+      )}
     </div>
   );
 }
