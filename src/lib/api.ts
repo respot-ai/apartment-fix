@@ -81,6 +81,34 @@ export function useUpdateDefect(id: string) {
   });
 }
 
+export type ReorderUpdate = { id: string; position: number };
+
+export function useReorderDefects() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (updates: ReorderUpdate[]) =>
+      request<{ ok: true; modified: number }>("/api/defects/reorder", {
+        method: "POST",
+        body: JSON.stringify({ updates }),
+      }),
+    onMutate: async (updates) => {
+      await qc.cancelQueries({ queryKey: defectsKey });
+      const prev = qc.getQueryData<Defect[]>(defectsKey);
+      if (prev) {
+        const byId = new Map(updates.map((u) => [u.id, u.position]));
+        qc.setQueryData<Defect[]>(
+          defectsKey,
+          prev.map((d) => (byId.has(d.id) ? { ...d, position: byId.get(d.id)! } : d)),
+        );
+      }
+      return { prev };
+    },
+    onError: (_err, _updates, ctx) => {
+      if (ctx?.prev) qc.setQueryData(defectsKey, ctx.prev);
+    },
+  });
+}
+
 export function useDeleteDefect() {
   const qc = useQueryClient();
   return useMutation({

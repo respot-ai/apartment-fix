@@ -54,6 +54,7 @@ export type Defect = {
   description: string;
   protocolRef: string;
   sources?: DefectSource[];
+  position?: number;
   supplierId?: string;
   photoBefore: string;
   photoAfter?: string;

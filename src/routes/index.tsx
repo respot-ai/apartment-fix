@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useDefects, useRooms } from "@/lib/api";
+import { useDefects, useReorderDefects, useRooms, type ReorderUpdate } from "@/lib/api";
 import {
   sortDefects,
   shortDate,
@@ -9,9 +9,25 @@ import {
   ownerLabel,
   priorityLabel,
 } from "@/lib/format";
-import type { Owner, Priority, Status } from "@/lib/types";
+import type { Defect, Owner, Priority, Status } from "@/lib/types";
 import { PriorityChip, OwnerChip } from "@/components/Chips";
-import { Plus, Filter, Settings, X } from "lucide-react";
+import { GripVertical, Plus, Filter, Settings, X } from "lucide-react";
+import {
+  DndContext,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 type DefectsSearch = {
   owner?: Owner;
@@ -65,6 +81,11 @@ function DefectsList() {
   const [showFilter, setShowFilter] = useState(false);
   const { data: defects = [], isLoading } = useDefects();
   const { data: rooms = [] } = useRooms();
+  const reorder = useReorderDefects();
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+  );
 
   const clearSearchKey = (key: keyof DefectsSearch) =>
     navigate({ search: (prev) => ({ ...prev, [key]: undefined }) });
@@ -127,6 +148,30 @@ function DefectsList() {
   }, [defects, room, trimmedQuery, searchIndex, ownerFilter, priorityFilter, statusFilter, overdueFilter]);
   const hasActiveFilter =
     !!room || !!trimmedQuery || !!ownerFilter || !!priorityFilter || !!statusFilter || !!overdueFilter;
+  const dragEnabled = !hasActiveFilter;
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const activeDefect = defects.find((d) => d.id === active.id);
+    const overDefect = defects.find((d) => d.id === over.id);
+    if (!activeDefect || !overDefect) return;
+    if (activeDefect.priority !== overDefect.priority) return;
+
+    const sorted = sortDefects(defects);
+    const fromIndex = sorted.findIndex((d) => d.id === active.id);
+    const toIndex = sorted.findIndex((d) => d.id === over.id);
+    if (fromIndex === -1 || toIndex === -1) return;
+
+    const next = arrayMove(sorted, fromIndex, toIndex);
+    const diff: ReorderUpdate[] = [];
+    next.forEach((d, i) => {
+      const newPosition = i + 1;
+      if (d.position !== newPosition) diff.push({ id: d.id, position: newPosition });
+    });
+    if (diff.length === 0) return;
+    reorder.mutate(diff);
+  };
 
   return (
     <div>
@@ -275,50 +320,97 @@ function DefectsList() {
             </Link>
           </div>
         )}
-        {filtered.map((d) => {
-          const days = daysUntil(d.dueDate);
-          const overdue = days < 0 && d.status !== "fixed";
-          return (
-            <Link
-              key={d.id}
-              to="/defects/$id"
-              params={{ id: d.id }}
-              className="block bg-card ring-1 ring-black/5 p-4 rounded-2xl active:scale-[0.99] transition-transform"
-            >
-              <div className="flex items-center gap-2 mb-1.5">
-                <PriorityChip priority={d.priority} />
-                <span className="text-[10px] font-medium text-muted-foreground">
-                  {d.room}
-                </span>
-                <span className="text-[10px] font-medium text-muted-foreground mr-auto">
-                  {statusLabel[d.status]}
-                </span>
-              </div>
-              <h3 className="text-sm font-medium leading-snug text-pretty mb-2 line-clamp-2">
-                {d.title}
-              </h3>
-              <div className="flex items-center justify-between">
-                <OwnerChip owner={d.owner} />
-                <span
-                  className={`text-[10px] font-medium ${
-                    overdue
-                      ? "text-red-700"
-                      : days <= 2 && d.status !== "fixed"
-                        ? "text-amber-700"
-                        : "text-muted-foreground"
-                  }`}
-                >
-                  {d.status === "fixed"
-                    ? "הושלם"
-                    : overdue
-                      ? "באיחור"
-                      : shortDate(d.dueDate)}
-                </span>
-              </div>
-            </Link>
-          );
-        })}
+        {dragEnabled ? (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={filtered.map((d) => d.id)} strategy={verticalListSortingStrategy}>
+              {filtered.map((d) => (
+                <SortableDefectRow key={d.id} defect={d} />
+              ))}
+            </SortableContext>
+          </DndContext>
+        ) : (
+          filtered.map((d) => <PlainDefectRow key={d.id} defect={d} />)
+        )}
       </div>
+    </div>
+  );
+}
+
+function DefectCard({ defect, className = "" }: { defect: Defect; className?: string }) {
+  const days = daysUntil(defect.dueDate);
+  const overdue = days < 0 && defect.status !== "fixed";
+  return (
+    <Link
+      to="/defects/$id"
+      params={{ id: defect.id }}
+      className={`flex-1 min-w-0 block p-4 active:scale-[0.99] transition-transform ${className}`}
+    >
+      <div className="flex items-center gap-2 mb-1.5">
+        <PriorityChip priority={defect.priority} />
+        <span className="text-[10px] font-medium text-muted-foreground">{defect.room}</span>
+        <span className="text-[10px] font-medium text-muted-foreground mr-auto">
+          {statusLabel[defect.status]}
+        </span>
+      </div>
+      <h3 className="text-sm font-medium leading-snug text-pretty mb-2 line-clamp-2">
+        {defect.title}
+      </h3>
+      <div className="flex items-center justify-between">
+        <OwnerChip owner={defect.owner} />
+        <span
+          className={`text-[10px] font-medium ${
+            overdue
+              ? "text-red-700"
+              : days <= 2 && defect.status !== "fixed"
+                ? "text-amber-700"
+                : "text-muted-foreground"
+          }`}
+        >
+          {defect.status === "fixed"
+            ? "הושלם"
+            : overdue
+              ? "באיחור"
+              : shortDate(defect.dueDate)}
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+function PlainDefectRow({ defect }: { defect: Defect }) {
+  return (
+    <div className="bg-card ring-1 ring-black/5 rounded-2xl overflow-hidden">
+      <DefectCard defect={defect} />
+    </div>
+  );
+}
+
+function SortableDefectRow({ defect }: { defect: Defect }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: defect.id,
+  });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-stretch bg-card ring-1 ring-black/5 rounded-2xl overflow-hidden"
+    >
+      <button
+        type="button"
+        aria-label="גרור לשינוי סדר"
+        onClick={(e) => e.preventDefault()}
+        className="shrink-0 grid place-items-center w-8 text-muted-foreground touch-none cursor-grab active:cursor-grabbing"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="size-4" />
+      </button>
+      <DefectCard defect={defect} />
     </div>
   );
 }

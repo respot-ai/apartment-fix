@@ -23,6 +23,7 @@ export const defectCreateSchema = z.object({
   description: z.string().default(""),
   protocolRef: z.string().default(""),
   sources: z.array(defectSource).optional(),
+  position: z.number().int().nonnegative().optional(),
   supplierId: z.string().optional(),
   photoBefore: z.string().default(""),
   photoAfter: z.string().optional(),

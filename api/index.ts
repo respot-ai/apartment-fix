@@ -16,6 +16,23 @@ import { makeLookupHandlers } from "./_lib/lookup.js";
 import { defaultRooms, defaultTrades } from "./_lib/seeds.js";
 
 const commentPatchSchema = z.object({ text: z.string().min(1) });
+const reorderSchema = z.object({
+  updates: z
+    .array(z.object({ id: z.string().min(1), position: z.number().int().nonnegative() }))
+    .min(1)
+    .max(500),
+});
+
+async function nextPosition(db: Awaited<ReturnType<typeof getDb>>): Promise<number> {
+  const last = await db
+    .collection("defects")
+    .find({ position: { $exists: true } }, { projection: { position: 1 } })
+    .sort({ position: -1 })
+    .limit(1)
+    .next();
+  const current = typeof last?.position === "number" ? last.position : 0;
+  return current + 1;
+}
 
 const roomsHandlers = makeLookupHandlers("rooms", defaultRooms);
 const tradesHandlers = makeLookupHandlers("trades", defaultTrades);
@@ -52,10 +69,24 @@ async function handleDefects(req: Request, rest: string[]): Promise<Response> {
   }
 
   if (req.method === "POST") {
+    if (rest.length === 1 && rest[0] === "reorder") {
+      const body = await readJson(req);
+      const parsed = reorderSchema.safeParse(body);
+      if (!parsed.success) return badRequest(parsed.error);
+      const ops = parsed.data.updates.map((u) => ({
+        updateOne: {
+          filter: { id: u.id },
+          update: { $set: { position: u.position } },
+        },
+      }));
+      const result = await db.collection("defects").bulkWrite(ops);
+      return json({ ok: true, modified: result.modifiedCount });
+    }
     if (rest.length === 0) {
       const body = await readJson(req);
       const parsed = defectCreateSchema.safeParse(body);
       if (!parsed.success) return badRequest(parsed.error);
+      const position = parsed.data.position ?? (await nextPosition(db));
       const doc = {
         id: randomUUID(),
         shortId: await generateUniqueShortId(db),
@@ -63,6 +94,7 @@ async function handleDefects(req: Request, rest: string[]): Promise<Response> {
         comments: [],
         activity: [],
         ...parsed.data,
+        position,
       };
       await db.collection("defects").insertOne(doc);
       const { _id: _omit, ...returned } = doc as typeof doc & { _id?: unknown };
@@ -103,9 +135,18 @@ async function handleDefects(req: Request, rest: string[]): Promise<Response> {
       const body = await readJson(req);
       const parsed = defectUpdateSchema.safeParse(body);
       if (!parsed.success) return badRequest(parsed.error);
+      const patch: Record<string, unknown> = { ...parsed.data };
+      if (parsed.data.priority !== undefined) {
+        const existing = await db
+          .collection("defects")
+          .findOne({ id: rest[0] }, { projection: { _id: 0, priority: 1 } });
+        if (existing && existing.priority !== parsed.data.priority) {
+          patch.position = await nextPosition(db);
+        }
+      }
       const result = await db.collection("defects").findOneAndUpdate(
         { id: rest[0] },
-        { $set: parsed.data },
+        { $set: patch },
         { returnDocument: "after", projection: { _id: 0 } },
       );
       return result ? json(result) : notFound();

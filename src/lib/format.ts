@@ -30,7 +30,7 @@ export function sortDefects(list: Defect[]): Defect[] {
   return [...list].sort(
     (a, b) =>
       priorityRank[a.priority] - priorityRank[b.priority] ||
-      // Empty due dates sort after dated defects.
+      (a.position ?? Infinity) - (b.position ?? Infinity) ||
       (a.dueDate || "￿").localeCompare(b.dueDate || "￿"),
   );
 }
