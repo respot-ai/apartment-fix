@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ImageViewerDialog } from "@/components/ImageViewerDialog";
 import { OwnerChip, PriorityChip } from "@/components/Chips";
@@ -63,6 +63,11 @@ function DefectDetail() {
     };
   }, [allDefects, id]);
   const protocolMap = useMemo(() => new Map(protocols.map((p) => [p.id, p])), [protocols]);
+  useEffect(() => {
+    document.getElementById("app-scroll")?.scrollTo(0, 0);
+    window.scrollTo(0, 0);
+  }, [id]);
+
   const [commentText, setCommentText] = useState("");
   const [viewerSrc, setViewerSrc] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
