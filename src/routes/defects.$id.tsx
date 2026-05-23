@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ImageViewerDialog } from "@/components/ImageViewerDialog";
+import { PriorityChip } from "@/components/Chips";
 import { formatDate, statusLabel } from "@/lib/format";
 import { useAddComment, useDefect, useUpdateDefect } from "@/lib/api";
 import type { Status } from "@/lib/types";
@@ -73,12 +74,25 @@ function DefectDetail() {
           <h2 className="text-lg font-semibold text-balance mt-1">{defect.title}</h2>
         </section>
 
+        <section className="grid grid-cols-2 gap-3">
+          <div>
+            <Label>אזור</Label>
+            <p className="text-sm mt-1">
+              {defect.room}
+              {defect.location ? ` · ${defect.location}` : ""}
+            </p>
+          </div>
+          <div>
+            <Label>תחום</Label>
+            <p className="text-sm mt-1">{defect.trade || "—"}</p>
+          </div>
+        </section>
+
         <section>
-          <Label>מיקום</Label>
-          <p className="text-sm mt-1">
-            {defect.room}
-            {defect.location ? ` · ${defect.location}` : ""}
-          </p>
+          <Label>עדיפות</Label>
+          <div className="mt-1.5">
+            <PriorityChip priority={defect.priority} />
+          </div>
         </section>
 
         <section>
