@@ -167,8 +167,28 @@ async function handleDefects(req: Request, rest: string[]): Promise<Response> {
 
   if (req.method === "DELETE") {
     if (rest.length === 1) {
-      const result = await db.collection("defects").deleteOne({ id: rest[0] });
-      return result.deletedCount > 0 ? new Response(null, { status: 204 }) : notFound();
+      const doc = await db
+        .collection("defects")
+        .findOne(
+          { id: rest[0] },
+          { projection: { _id: 0, photos: 1, photoBefore: 1, photoAfter: 1 } },
+        );
+      if (!doc) return notFound();
+      const urls = [
+        ...((doc.photos as string[] | undefined) ?? []),
+        doc.photoBefore as string | undefined,
+        doc.photoAfter as string | undefined,
+      ].filter((u): u is string => typeof u === "string" && /^https?:\/\//i.test(u));
+      const unique = Array.from(new Set(urls));
+      if (unique.length > 0) {
+        try {
+          await del(unique);
+        } catch (err) {
+          console.warn("blob del failed", err);
+        }
+      }
+      await db.collection("defects").deleteOne({ id: rest[0] });
+      return new Response(null, { status: 204 });
     }
     if (rest.length === 3 && rest[1] === "comments") {
       const result = await db.collection("defects").findOneAndUpdate(

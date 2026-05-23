@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ImageViewerDialog } from "@/components/ImageViewerDialog";
@@ -8,6 +8,7 @@ import {
   useAddComment,
   useDefects,
   useDeleteComment,
+  useDeleteDefect,
   useProtocols,
   useSuppliers,
   useUpdateComment,
@@ -40,12 +41,15 @@ const statusOptions: Array<{ id: Status; label: string }> = [
 
 function DefectDetail() {
   const { id } = Route.useParams();
+  const navigate = useNavigate();
   const { data: allDefects = [], isLoading, error } = useDefects();
   const defect = allDefects.find((d) => d.id === id);
   const updateDefect = useUpdateDefect(id);
   const addComment = useAddComment(id);
   const updateComment = useUpdateComment(id);
   const deleteComment = useDeleteComment(id);
+  const deleteDefect = useDeleteDefect();
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const { data: suppliers = [] } = useSuppliers();
   const { data: protocols = [] } = useProtocols();
 
@@ -376,7 +380,65 @@ function DefectDetail() {
         </section>
 
         <NavRow prev={prev?.id ?? null} next={next?.id ?? null} shortId={defect.shortId} />
+
+        <div className="pt-6 flex justify-center">
+          <button
+            type="button"
+            onClick={() => setConfirmDelete(true)}
+            disabled={deleteDefect.isPending}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg ring-1 ring-red-200 bg-card text-red-700 text-sm font-medium hover:bg-red-50 disabled:opacity-50"
+          >
+            <Trash2 className="size-4" />
+            מחק פגם
+          </button>
+        </div>
       </div>
+
+      {confirmDelete && (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-5"
+          onClick={() => {
+            if (!deleteDefect.isPending) setConfirmDelete(false);
+          }}
+        >
+          <div
+            className="w-full max-w-sm bg-card rounded-2xl ring-1 ring-black/5 p-5 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div>
+              <h3 className="text-base font-semibold">למחוק את הפגם?</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                הפעולה תמחק את הפגם ואת התמונות המשויכות אליו לצמיתות. לא ניתן לבטל.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(false)}
+                disabled={deleteDefect.isPending}
+                className="px-4 py-2 rounded-lg ring-1 ring-black/10 bg-background text-sm font-medium disabled:opacity-50"
+              >
+                ביטול
+              </button>
+              <button
+                type="button"
+                disabled={deleteDefect.isPending}
+                onClick={() => {
+                  deleteDefect.mutate(id, {
+                    onSuccess: () => {
+                      setConfirmDelete(false);
+                      void navigate({ to: "/" });
+                    },
+                  });
+                }}
+                className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium disabled:opacity-50"
+              >
+                {deleteDefect.isPending ? "מוחק…" : "מחק"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
