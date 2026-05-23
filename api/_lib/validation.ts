@@ -43,3 +43,9 @@ export const commentCreateSchema = z.object({
   text: z.string().min(1),
   at: z.string().optional(),
 });
+
+export const protocolCreateSchema = z.object({
+  name: z.string().min(1).max(200),
+  url: z.string().url(),
+  size: z.number().int().nonnegative().optional(),
+});

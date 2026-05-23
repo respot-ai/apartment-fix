@@ -57,5 +57,13 @@ export type Defect = {
   activity: ActivityEntry[];
 };
 
+export type Protocol = {
+  id: string;
+  name: string;
+  url: string;
+  uploadedAt: string;
+  size?: number;
+};
+
 export const apartmentLabel = "דירה 402 · סקייוויו רזידנסס";
 export const protocolSignedAt = "24 בספטמבר 2024";

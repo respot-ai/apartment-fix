@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { upload } from "@vercel/blob/client";
-import type { Defect, Lookup, Supplier } from "./types";
+import type { Defect, Lookup, Protocol, Supplier } from "./types";
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, {
@@ -134,6 +134,43 @@ export function useUploadImage() {
       });
       return blob.url;
     },
+  });
+}
+
+// --- Protocols ---
+
+const protocolsKey = ["protocols"] as const;
+
+export function useProtocols() {
+  return useQuery({
+    queryKey: protocolsKey,
+    queryFn: () => request<Protocol[]>("/api/protocols"),
+  });
+}
+
+export function useUploadProtocol() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const blob = await upload(`protocols/${file.name}`, file, {
+        access: "public",
+        handleUploadUrl: "/api/uploads",
+        contentType: file.type || "application/pdf",
+      });
+      return request<Protocol>("/api/protocols", {
+        method: "POST",
+        body: JSON.stringify({ name: file.name, url: blob.url, size: file.size }),
+      });
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: protocolsKey }),
+  });
+}
+
+export function useDeleteProtocol() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => request<void>(`/api/protocols/${id}`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: protocolsKey }),
   });
 }
 
