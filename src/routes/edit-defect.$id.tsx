@@ -10,7 +10,7 @@ import {
   useUploadImage,
 } from "@/lib/api";
 import { THIRD_PARTY_OWNER_ID, type Owner, type Priority } from "@/lib/types";
-import { Camera, ChevronDown, ImagePlus, Loader2, Trash2 } from "lucide-react";
+import { Camera, ChevronDown, ImagePlus, Loader2, RotateCw, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/edit-defect/$id")({
   head: () => ({
@@ -109,6 +109,9 @@ function EditDefectForm({
     ];
     return merged.filter((v, i, a) => /^https?:\/\//i.test(v) && a.indexOf(v) === i);
   });
+  const [photoMeta, setPhotoMeta] = useState<NonNullable<typeof initial.photoMeta>>(
+    () => ({ ...(initial.photoMeta ?? {}) }),
+  );
   const uploadImage = useUploadImage();
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -127,6 +130,26 @@ function EditDefectForm({
 
   const removePhoto = (url: string) => {
     setPhotos((prev) => prev.filter((p) => p !== url));
+    setPhotoMeta((prev) => {
+      if (!(url in prev)) return prev;
+      const next = { ...prev };
+      delete next[url];
+      return next;
+    });
+  };
+
+  const rotatePhoto = (url: string) => {
+    setPhotoMeta((prev) => {
+      const current = prev[url]?.rotation ?? 0;
+      const next = (current + 90) % 360;
+      const out = { ...prev };
+      if (next === 0) {
+        delete out[url];
+      } else {
+        out[url] = { ...out[url], rotation: next };
+      }
+      return out;
+    });
   };
 
   return (
@@ -149,6 +172,7 @@ function EditDefectForm({
             photos,
             photoBefore: photos[0] ?? "",
             photoAfter: photos[1],
+            photoMeta,
           },
           { onSuccess: () => navigate({ to: "/defects/$id", params: { id: defectId } }) },
         );
@@ -272,7 +296,7 @@ function EditDefectForm({
         <Group label="תמונות">
           <div className="grid grid-cols-3 gap-2">
             {photos.map((url) => {
-              const rotation = initial.photoMeta?.[url]?.rotation ?? 0;
+              const rotation = photoMeta[url]?.rotation ?? 0;
               return (
                 <div
                   key={url}
@@ -292,6 +316,14 @@ function EditDefectForm({
                     aria-label="מחק תמונה"
                   >
                     <Trash2 className="size-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => rotatePhoto(url)}
+                    className="absolute top-1.5 left-1.5 grid place-items-center size-7 rounded-full bg-black/60 text-white backdrop-blur hover:bg-black/75 focus:outline-none focus:ring-2 focus:ring-white/60"
+                    aria-label="סובב תמונה"
+                  >
+                    <RotateCw className="size-3.5" />
                   </button>
                 </div>
               );
