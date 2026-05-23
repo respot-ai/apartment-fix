@@ -36,6 +36,7 @@ export type Comment = {
 
 export type Defect = {
   id: string;
+  shortId: string;
   title: string;
   room: string;
   location: string;

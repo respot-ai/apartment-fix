@@ -13,7 +13,7 @@ import {
   useUpdateDefect,
 } from "@/lib/api";
 import { THIRD_PARTY_OWNER_ID, type Status } from "@/lib/types";
-import { Check, Pencil, Trash2, X } from "lucide-react";
+import { Check, Copy, Pencil, Trash2, X } from "lucide-react";
 
 export const Route = createFileRoute("/defects/$id")({
   head: () => ({
@@ -331,7 +331,33 @@ function DefectDetail() {
             </form>
           </div>
         </section>
+
+        {defect.shortId && <ShortIdRow shortId={defect.shortId} />}
       </div>
+    </div>
+  );
+}
+
+function ShortIdRow({ shortId }: { shortId: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <div className="pt-2 flex items-center justify-center gap-2 text-muted-foreground">
+      <span className="text-[11px] uppercase tracking-widest">מזהה</span>
+      <span className="text-sm font-mono font-semibold text-foreground/80 tabular-nums">
+        {shortId}
+      </span>
+      <button
+        type="button"
+        onClick={() => {
+          void navigator.clipboard?.writeText(shortId);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1200);
+        }}
+        className="grid place-items-center size-7 rounded-full hover:bg-secondary hover:text-foreground"
+        aria-label="העתק מזהה"
+      >
+        {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+      </button>
     </div>
   );
 }

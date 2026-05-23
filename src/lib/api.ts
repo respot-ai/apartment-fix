@@ -18,7 +18,10 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
-export type DefectInput = Omit<Defect, "id" | "reportedAt" | "comments" | "activity"> & {
+export type DefectInput = Omit<
+  Defect,
+  "id" | "shortId" | "reportedAt" | "comments" | "activity"
+> & {
   reportedAt?: string;
 };
 export type DefectPatch = Partial<DefectInput>;
