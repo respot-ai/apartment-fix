@@ -146,7 +146,7 @@ function DefectDetail() {
 
         <section>
           <Label>תיאור</Label>
-          <p className="text-sm leading-relaxed text-foreground/80 text-pretty mt-1">
+          <p className="text-sm leading-relaxed text-foreground/80 text-pretty mt-1 whitespace-pre-wrap">
             {defect.description}
           </p>
         </section>
