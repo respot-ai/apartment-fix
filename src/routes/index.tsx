@@ -29,7 +29,7 @@ export const Route = createFileRoute("/")({
 
 function DefectsList() {
   const [room, setRoom] = useState<string | null>(null);
-  const [idQuery, setIdQuery] = useState("");
+  const [query, setQuery] = useState("");
   const [showFilter, setShowFilter] = useState(false);
   const { data: defects = [], isLoading } = useDefects();
   const { data: rooms = [] } = useRooms();
@@ -64,15 +64,29 @@ function DefectsList() {
     return rooms.filter((r) => used.has(r.name));
   }, [defects, rooms]);
 
-  const trimmedId = idQuery.trim().toUpperCase();
-  const filtered = sortDefects(
-    defects.filter((d) => {
-      if (room && d.room !== room) return false;
-      if (trimmedId && !(d.shortId ?? "").toUpperCase().includes(trimmedId)) return false;
-      return true;
-    }),
+  const searchIndex = useMemo(
+    () =>
+      defects.map((d) => ({
+        id: d.id,
+        haystack: `${d.shortId ?? ""} ${d.title} ${d.description}`.toLowerCase(),
+      })),
+    [defects],
   );
-  const hasActiveFilter = !!room || !!trimmedId;
+
+  const trimmedQuery = query.trim().toLowerCase();
+  const filtered = useMemo(() => {
+    const matchIds = trimmedQuery
+      ? new Set(searchIndex.filter((e) => e.haystack.includes(trimmedQuery)).map((e) => e.id))
+      : null;
+    return sortDefects(
+      defects.filter((d) => {
+        if (room && d.room !== room) return false;
+        if (matchIds && !matchIds.has(d.id)) return false;
+        return true;
+      }),
+    );
+  }, [defects, room, trimmedQuery, searchIndex]);
+  const hasActiveFilter = !!room || !!trimmedQuery;
 
   return (
     <div>
@@ -116,10 +130,10 @@ function DefectsList() {
           <div className="space-y-2 pb-2">
             <input
               type="text"
-              value={idQuery}
-              onChange={(e) => setIdQuery(e.target.value)}
-              placeholder="חיפוש לפי מזהה (למשל 3WYEZ)"
-              className="w-full bg-card ring-1 ring-black/5 rounded-full px-3.5 py-1.5 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-foreground/30 font-mono tracking-wider uppercase"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="חיפוש לפי מזהה, כותרת או תיאור"
+              className="w-full bg-card ring-1 ring-black/5 rounded-full px-3.5 py-1.5 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-foreground/30"
             />
             <div className="flex flex-wrap gap-2">
               <button
@@ -160,12 +174,12 @@ function DefectsList() {
                 <X className="size-3" />
               </button>
             )}
-            {trimmedId && (
+            {trimmedQuery && (
               <button
-                onClick={() => setIdQuery("")}
+                onClick={() => setQuery("")}
                 className="flex items-center gap-1 text-xs font-medium text-foreground bg-card ring-1 ring-black/5 rounded-full px-2.5 py-1"
               >
-                <span className="font-mono">מזהה: {trimmedId}</span>
+                <span>חיפוש: {query.trim()}</span>
                 <X className="size-3" />
               </button>
             )}
