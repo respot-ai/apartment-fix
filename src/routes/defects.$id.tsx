@@ -8,12 +8,22 @@ import {
   useAddComment,
   useDefects,
   useDeleteComment,
+  useProtocols,
   useSuppliers,
   useUpdateComment,
   useUpdateDefect,
 } from "@/lib/api";
 import { THIRD_PARTY_OWNER_ID, type Status } from "@/lib/types";
-import { Check, ChevronLeft, ChevronRight, Copy, Pencil, Trash2, X } from "lucide-react";
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  ExternalLink,
+  Pencil,
+  Trash2,
+  X,
+} from "lucide-react";
 
 export const Route = createFileRoute("/defects/$id")({
   head: () => ({
@@ -37,6 +47,7 @@ function DefectDetail() {
   const updateComment = useUpdateComment(id);
   const deleteComment = useDeleteComment(id);
   const { data: suppliers = [] } = useSuppliers();
+  const { data: protocols = [] } = useProtocols();
 
   const { prev, next } = useMemo(() => {
     const sorted = sortDefects(allDefects);
@@ -47,6 +58,7 @@ function DefectDetail() {
       next: idx < sorted.length - 1 ? sorted[idx + 1] : null,
     };
   }, [allDefects, id]);
+  const protocolMap = useMemo(() => new Map(protocols.map((p) => [p.id, p])), [protocols]);
   const [commentText, setCommentText] = useState("");
   const [viewerSrc, setViewerSrc] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -162,16 +174,36 @@ function DefectDetail() {
           </p>
         </section>
 
-        <section className="grid grid-cols-2 gap-3">
-          <div>
-            <Label>דווח ב‑</Label>
-            <p className="text-sm mt-1">{formatDate(defect.reportedAt)}</p>
-          </div>
-          <div>
-            <Label>מקור</Label>
-            <p className="text-sm mt-1">{defect.protocolRef || "—"}</p>
-          </div>
+        <section>
+          <Label>דווח ב‑</Label>
+          <p className="text-sm mt-1">{formatDate(defect.reportedAt)}</p>
         </section>
+
+        {defect.sources && defect.sources.length > 0 && (
+          <section>
+            <Label>מקור</Label>
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {defect.sources.map((s, i) => {
+                const p = protocolMap.get(s.protocolId);
+                if (!p) return null;
+                return (
+                  <a
+                    key={i}
+                    href={`${p.url}#page=${s.page}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-medium text-foreground bg-card ring-1 ring-black/5 rounded-full px-2.5 py-1 hover:bg-secondary"
+                  >
+                    <span>
+                      {p.name} · עמ׳ {s.page}
+                    </span>
+                    <ExternalLink className="size-3" />
+                  </a>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         <section>
           <Label>סטטוס</Label>

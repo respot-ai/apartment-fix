@@ -5,6 +5,11 @@ const owner = z.enum(["contractor", "homeowner", "third-party"]);
 const status = z.enum(["new", "in-progress", "fixed"]);
 const trade = z.string().min(1).max(80);
 
+const defectSource = z.object({
+  protocolId: z.string().min(1),
+  page: z.number().int().positive(),
+});
+
 export const defectCreateSchema = z.object({
   title: z.string().min(1),
   room: z.string().min(1),
@@ -17,6 +22,7 @@ export const defectCreateSchema = z.object({
   reportedAt: z.string().optional(),
   description: z.string().default(""),
   protocolRef: z.string().default(""),
+  sources: z.array(defectSource).optional(),
   supplierId: z.string().optional(),
   photoBefore: z.string().default(""),
   photoAfter: z.string().optional(),

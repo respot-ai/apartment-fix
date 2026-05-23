@@ -34,6 +34,11 @@ export type Comment = {
   at: string;
 };
 
+export type DefectSource = {
+  protocolId: string;
+  page: number;
+};
+
 export type Defect = {
   id: string;
   shortId: string;
@@ -48,6 +53,7 @@ export type Defect = {
   reportedAt: string;
   description: string;
   protocolRef: string;
+  sources?: DefectSource[];
   supplierId?: string;
   photoBefore: string;
   photoAfter?: string;

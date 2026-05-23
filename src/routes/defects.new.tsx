@@ -1,8 +1,16 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import { useCreateDefect, useRooms, useSuppliers, useTrades, useUploadImage } from "@/lib/api";
-import { THIRD_PARTY_OWNER_ID, type Owner, type Priority } from "@/lib/types";
+import {
+  useCreateDefect,
+  useProtocols,
+  useRooms,
+  useSuppliers,
+  useTrades,
+  useUploadImage,
+} from "@/lib/api";
+import { THIRD_PARTY_OWNER_ID, type DefectSource, type Owner, type Priority } from "@/lib/types";
+import { SourcePicker } from "@/components/SourcePicker";
 import { Camera, ChevronDown, ImagePlus, Loader2, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/defects/new")({
@@ -33,6 +41,7 @@ function AddDefect() {
   const { data: suppliers = [] } = useSuppliers();
   const { data: rooms = [] } = useRooms();
   const { data: trades = [] } = useTrades();
+  const { data: protocols = [] } = useProtocols();
   const [room, setRoom] = useState("");
   const [trade, setTrade] = useState("");
   const [priority, setPriority] = useState<Priority>("medium");
@@ -42,6 +51,7 @@ function AddDefect() {
   const [desc, setDesc] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [photos, setPhotos] = useState<string[]>([]);
+  const [sources, setSources] = useState<DefectSource[]>([]);
   const [showErrors, setShowErrors] = useState(false);
   const uploadImage = useUploadImage();
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
@@ -88,6 +98,7 @@ function AddDefect() {
             dueDate,
             description: desc,
             protocolRef: "",
+            sources: sources.filter((s) => s.protocolId),
             supplierId: owner === THIRD_PARTY_OWNER_ID && supplierId ? supplierId : undefined,
             photos,
             photoBefore: photos[0] ?? "",
@@ -287,6 +298,10 @@ function AddDefect() {
           {uploadImage.isError && (
             <p className="text-xs text-red-700 mt-2">העלאת תמונה נכשלה. נסה שוב.</p>
           )}
+        </Group>
+
+        <Group label="מקורות">
+          <SourcePicker value={sources} onChange={setSources} protocols={protocols} />
         </Group>
 
         {showErrors && hasMissing && (

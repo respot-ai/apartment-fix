@@ -3,13 +3,15 @@ import { useRef, useState } from "react";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import {
   useDefects,
+  useProtocols,
   useRooms,
   useSuppliers,
   useTrades,
   useUpdateDefect,
   useUploadImage,
 } from "@/lib/api";
-import { THIRD_PARTY_OWNER_ID, type Owner, type Priority } from "@/lib/types";
+import { THIRD_PARTY_OWNER_ID, type DefectSource, type Owner, type Priority } from "@/lib/types";
+import { SourcePicker } from "@/components/SourcePicker";
 import { Camera, ChevronDown, ImagePlus, Loader2, RotateCw, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/edit-defect/$id")({
@@ -43,6 +45,7 @@ function EditDefect() {
   const { data: suppliers = [] } = useSuppliers();
   const { data: rooms = [] } = useRooms();
   const { data: trades = [] } = useTrades();
+  const { data: protocols = [] } = useProtocols();
 
   if (isLoading) {
     return <div className="p-10 text-center text-sm text-muted-foreground">טוען…</div>;
@@ -65,6 +68,7 @@ function EditDefect() {
       suppliers={suppliers}
       rooms={rooms}
       trades={trades}
+      protocols={protocols}
       updateDefect={updateDefect}
       navigate={navigate}
     />
@@ -79,6 +83,9 @@ type EditFormProps = {
     : never;
   rooms: ReturnType<typeof useRooms>["data"] extends infer T ? Exclude<T, undefined> : never;
   trades: ReturnType<typeof useTrades>["data"] extends infer T ? Exclude<T, undefined> : never;
+  protocols: ReturnType<typeof useProtocols>["data"] extends infer T
+    ? Exclude<T, undefined>
+    : never;
   updateDefect: ReturnType<typeof useUpdateDefect>;
   navigate: ReturnType<typeof useNavigate>;
 };
@@ -89,6 +96,7 @@ function EditDefectForm({
   suppliers,
   rooms,
   trades,
+  protocols,
   updateDefect,
   navigate,
 }: EditFormProps) {
@@ -101,7 +109,7 @@ function EditDefectForm({
   const [desc, setDesc] = useState(initial.description);
   const [dueDate, setDueDate] = useState(initial.dueDate);
   const [reportedAt, setReportedAt] = useState(initial.reportedAt);
-  const [protocolRef, setProtocolRef] = useState(initial.protocolRef);
+  const [sources, setSources] = useState<DefectSource[]>(() => initial.sources ?? []);
   const [photos, setPhotos] = useState<string[]>(() => {
     const merged = [
       ...(initial.photos ?? []),
@@ -166,7 +174,7 @@ function EditDefectForm({
             owner,
             dueDate,
             reportedAt,
-            protocolRef,
+            sources: sources.filter((s) => s.protocolId),
             description: desc,
             supplierId: owner === THIRD_PARTY_OWNER_ID && supplierId ? supplierId : undefined,
             photos,
@@ -384,13 +392,8 @@ function EditDefectForm({
           )}
         </Group>
 
-        <Group label="מקור (פרוטוקול / עמוד)">
-          <input
-            value={protocolRef}
-            onChange={(e) => setProtocolRef(e.target.value)}
-            placeholder="לדוגמה: page 12"
-            className="w-full bg-card ring-1 ring-black/5 rounded-xl px-3 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-foreground/30"
-          />
+        <Group label="מקורות">
+          <SourcePicker value={sources} onChange={setSources} protocols={protocols} />
         </Group>
 
         {updateDefect.isError && <p className="text-xs text-red-700">שמירה נכשלה. נסה שוב.</p>}
