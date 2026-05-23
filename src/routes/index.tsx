@@ -91,14 +91,11 @@ function DefectsList() {
   return (
     <div>
       <div ref={sentinelRef} className="hidden" aria-hidden />
-      <header className="px-5 pt-10 pb-3 bg-surface sticky top-0 z-10">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">פגמים</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {filtered.length} פתוחים · ממוין לפי עדיפות
-            </p>
-          </div>
+      <header className="px-5 pt-10 pb-4 bg-surface sticky top-0 z-10">
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-xl font-semibold tracking-tight">
+            פגמים <span className="text-muted-foreground font-normal">({filtered.length})</span>
+          </h1>
           <div className="flex gap-2">
             <Link
               to="/settings"

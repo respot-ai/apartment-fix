@@ -10,7 +10,7 @@ const tabs: { to: string; label: string; icon: typeof ListChecks; exact?: boolea
 export function BottomTabBar() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   return (
-    <nav className="absolute bottom-0 inset-x-0 h-20 bg-card/95 backdrop-blur border-t border-black/5 flex items-stretch justify-around px-2 pb-4 pt-2">
+    <nav className="absolute bottom-0 inset-x-0 h-14 bg-card/95 backdrop-blur border-t border-black/5 flex items-stretch justify-around px-2 py-2">
       {tabs.map((t) => {
         const Icon = t.icon;
         const active =
