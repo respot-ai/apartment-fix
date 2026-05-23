@@ -1,9 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import { useCreateDefect, useRooms, useSuppliers, useTrades } from "@/lib/api";
-import type { Owner, Priority } from "@/lib/types";
-import { Camera, ChevronDown } from "lucide-react";
+import { useCreateDefect, useRooms, useSuppliers, useTrades, useUploadImage } from "@/lib/api";
+import { THIRD_PARTY_OWNER_ID, type Owner, type Priority } from "@/lib/types";
+import { Camera, ChevronDown, ImagePlus, Loader2, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/defects/new")({
   head: () => ({
@@ -41,6 +41,26 @@ function AddDefect() {
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [photos, setPhotos] = useState<string[]>([]);
+  const uploadImage = useUploadImage();
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    for (const file of Array.from(files)) {
+      try {
+        const url = await uploadImage.mutateAsync(file);
+        setPhotos((prev) => (prev.includes(url) ? prev : [...prev, url]));
+      } catch {
+        // surface via uploadImage.isError below
+      }
+    }
+  };
+
+  const removePhoto = (url: string) => {
+    setPhotos((prev) => prev.filter((p) => p !== url));
+  };
 
   return (
     <form
@@ -59,8 +79,10 @@ function AddDefect() {
             dueDate,
             description: desc,
             protocolRef: "",
-            supplierId: owner === "third-party" && supplierId ? supplierId : undefined,
-            photoBefore: "",
+            supplierId: owner === THIRD_PARTY_OWNER_ID && supplierId ? supplierId : undefined,
+            photos,
+            photoBefore: photos[0] ?? "",
+            photoAfter: photos[1],
           },
           { onSuccess: () => navigate({ to: "/" }) },
         );
@@ -69,17 +91,6 @@ function AddDefect() {
       <ScreenHeader back="/" title="פגם חדש" subtitle="תיעוד והקצאה" />
 
       <div className="px-5 space-y-5 pb-6">
-        <button
-          type="button"
-          className="w-full aspect-video bg-card ring-1 ring-dashed ring-black/15 rounded-2xl grid place-items-center text-center"
-        >
-          <div>
-            <Camera className="size-6 text-muted-foreground mx-auto mb-1.5" />
-            <p className="text-sm font-medium">צלם או העלה תמונה</p>
-            <p className="text-xs text-muted-foreground mt-0.5">עד 6 תמונות</p>
-          </div>
-        </button>
-
         <Group label="כותרת">
           <input
             value={title}
@@ -91,10 +102,20 @@ function AddDefect() {
 
         <div className="grid grid-cols-2 gap-3">
           <Group label="אזור">
-            <Select value={room} onChange={setRoom} options={rooms.map((r) => r.name)} placeholder="בחר" />
+            <Select
+              value={room}
+              onChange={setRoom}
+              options={rooms.map((r) => r.name)}
+              placeholder="בחר"
+            />
           </Group>
           <Group label="תחום">
-            <Select value={trade} onChange={setTrade} options={trades.map((t) => t.name)} placeholder="בחר" />
+            <Select
+              value={trade}
+              onChange={setTrade}
+              options={trades.map((t) => t.name)}
+              placeholder="בחר"
+            />
           </Group>
         </div>
 
@@ -146,7 +167,7 @@ function AddDefect() {
           </div>
         </Group>
 
-        {owner === "third-party" && (
+        {owner === THIRD_PARTY_OWNER_ID && (
           <Group label="בחר ספק מהרשימה">
             <Select
               value={supplierId}
@@ -172,9 +193,81 @@ function AddDefect() {
           />
         </Group>
 
-        {createDefect.isError && (
-          <p className="text-xs text-red-700">שמירה נכשלה. נסה שוב.</p>
-        )}
+        <Group label="תמונות">
+          <div className="grid grid-cols-3 gap-2">
+            {photos.map((url) => (
+              <div
+                key={url}
+                className="relative aspect-square rounded-xl ring-1 ring-black/5 overflow-hidden bg-secondary"
+              >
+                <img src={url} alt="" className="size-full object-cover" loading="lazy" />
+                <button
+                  type="button"
+                  onClick={() => removePhoto(url)}
+                  className="absolute top-1.5 right-1.5 grid place-items-center size-7 rounded-full bg-black/60 text-white backdrop-blur hover:bg-black/75 focus:outline-none focus:ring-2 focus:ring-white/60"
+                  aria-label="מחק תמונה"
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => cameraInputRef.current?.click()}
+              disabled={uploadImage.isPending}
+              className="aspect-square rounded-xl ring-1 ring-dashed ring-black/15 bg-card grid place-items-center text-muted-foreground hover:text-foreground hover:ring-black/30 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-foreground/30"
+              aria-label="צלם תמונה"
+            >
+              {uploadImage.isPending ? (
+                <Loader2 className="size-5 animate-spin" />
+              ) : (
+                <div className="flex flex-col items-center gap-1">
+                  <Camera className="size-5" />
+                  <span className="text-[10px] font-medium">מצלמה</span>
+                </div>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadImage.isPending}
+              className="aspect-square rounded-xl ring-1 ring-dashed ring-black/15 bg-card grid place-items-center text-muted-foreground hover:text-foreground hover:ring-black/30 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-foreground/30"
+              aria-label="העלה מהמכשיר"
+            >
+              <div className="flex flex-col items-center gap-1">
+                <ImagePlus className="size-5" />
+                <span className="text-[10px] font-medium">קובץ</span>
+              </div>
+            </button>
+          </div>
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => {
+              handleFiles(e.target.files);
+              e.target.value = "";
+            }}
+          />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              handleFiles(e.target.files);
+              e.target.value = "";
+            }}
+          />
+          {uploadImage.isError && (
+            <p className="text-xs text-red-700 mt-2">העלאת תמונה נכשלה. נסה שוב.</p>
+          )}
+        </Group>
+
+        {createDefect.isError && <p className="text-xs text-red-700">שמירה נכשלה. נסה שוב.</p>}
 
         <div className="grid grid-cols-2 gap-2 pt-2">
           <Link
@@ -220,9 +313,7 @@ function Select({
   options: Opt[];
   placeholder: string;
 }) {
-  const normalized = options.map((o) =>
-    typeof o === "string" ? { value: o, label: o } : o,
-  );
+  const normalized = options.map((o) => (typeof o === "string" ? { value: o, label: o } : o));
   return (
     <div className="relative">
       <select

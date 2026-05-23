@@ -92,6 +92,33 @@ export function useAddComment(id: string) {
   });
 }
 
+export function useUpdateComment(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ commentId, text }: { commentId: string; text: string }) =>
+      request<Defect>(`/api/defects/${id}/comments/${commentId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ text }),
+      }),
+    onSuccess: (doc) => {
+      qc.setQueryData(defectKey(id), doc);
+      qc.invalidateQueries({ queryKey: defectsKey });
+    },
+  });
+}
+
+export function useDeleteComment(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (commentId: string) =>
+      request<Defect>(`/api/defects/${id}/comments/${commentId}`, { method: "DELETE" }),
+    onSuccess: (doc) => {
+      qc.setQueryData(defectKey(id), doc);
+      qc.invalidateQueries({ queryKey: defectsKey });
+    },
+  });
+}
+
 // --- Uploads ---
 
 export function useUploadImage() {

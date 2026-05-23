@@ -7,13 +7,17 @@ export type LookupDoc = { id: string; name: string };
 
 export const lookupCreateSchema = z.object({ name: z.string().min(1).max(80) });
 
-export function makeLookupHandlers(collectionName: string, defaults: string[]) {
+type SeedSpec = string | { id: string; name: string };
+
+export function makeLookupHandlers(collectionName: string, defaults: SeedSpec[]) {
   async function ensureSeeded(): Promise<void> {
     const db = await getDb();
     const collection = db.collection<LookupDoc>(collectionName);
     const count = await collection.estimatedDocumentCount();
     if (count > 0) return;
-    await collection.insertMany(defaults.map((name) => ({ id: randomUUID(), name })));
+    await collection.insertMany(
+      defaults.map((seed) => (typeof seed === "string" ? { id: randomUUID(), name: seed } : seed)),
+    );
   }
 
   function extractId(req: Request): string | null {

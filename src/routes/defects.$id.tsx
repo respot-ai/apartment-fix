@@ -2,11 +2,18 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ImageViewerDialog } from "@/components/ImageViewerDialog";
-import { PriorityChip } from "@/components/Chips";
+import { OwnerChip, PriorityChip } from "@/components/Chips";
 import { formatDate, statusLabel } from "@/lib/format";
-import { useAddComment, useDefect, useUpdateDefect } from "@/lib/api";
-import type { Status } from "@/lib/types";
-import { Pencil } from "lucide-react";
+import {
+  useAddComment,
+  useDefect,
+  useDeleteComment,
+  useSuppliers,
+  useUpdateComment,
+  useUpdateDefect,
+} from "@/lib/api";
+import { THIRD_PARTY_OWNER_ID, type Status } from "@/lib/types";
+import { Check, Pencil, Trash2, X } from "lucide-react";
 
 export const Route = createFileRoute("/defects/$id")({
   head: () => ({
@@ -26,8 +33,13 @@ function DefectDetail() {
   const { data: defect, isLoading, error } = useDefect(id);
   const updateDefect = useUpdateDefect(id);
   const addComment = useAddComment(id);
+  const updateComment = useUpdateComment(id);
+  const deleteComment = useDeleteComment(id);
+  const { data: suppliers = [] } = useSuppliers();
   const [commentText, setCommentText] = useState("");
   const [viewerSrc, setViewerSrc] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState("");
 
   if (isLoading) {
     return <div className="p-10 text-center text-sm text-muted-foreground">טוען…</div>;
@@ -102,10 +114,33 @@ function DefectDetail() {
           </div>
         </section>
 
-        <section>
-          <Label>עדיפות</Label>
-          <div className="mt-1.5">
-            <PriorityChip priority={defect.priority} />
+        <section className="grid grid-cols-2 gap-3">
+          <div>
+            <Label>עדיפות</Label>
+            <div className="mt-1.5">
+              <PriorityChip priority={defect.priority} />
+            </div>
+          </div>
+          <div>
+            <Label>אחראי</Label>
+            <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+              <OwnerChip owner={defect.owner} />
+              {defect.owner === THIRD_PARTY_OWNER_ID &&
+                defect.supplierId &&
+                (() => {
+                  const supplier = suppliers.find((s) => s.id === defect.supplierId);
+                  if (!supplier) return null;
+                  return (
+                    <Link
+                      to="/suppliers/$id"
+                      params={{ id: supplier.id }}
+                      className="text-sm font-medium underline"
+                    >
+                      {supplier.name}
+                    </Link>
+                  );
+                })()}
+            </div>
           </div>
         </section>
 
@@ -194,20 +229,80 @@ function DefectDetail() {
             {defect.comments.length === 0 && (
               <p className="text-xs text-muted-foreground">אין הערות עדיין.</p>
             )}
-            {defect.comments.map((c) => (
-              <div key={c.id} className="flex gap-3">
-                <div className="size-7 rounded-full bg-secondary ring-1 ring-black/5 grid place-items-center text-[10px] font-medium shrink-0">
-                  {c.initials}
+            {defect.comments.map((c) => {
+              const isEditing = editingId === c.id;
+              return (
+                <div key={c.id} className="bg-card ring-1 ring-black/5 rounded-xl p-3">
+                  {isEditing ? (
+                    <>
+                      <textarea
+                        value={editingText}
+                        onChange={(e) => setEditingText(e.target.value)}
+                        rows={2}
+                        className="w-full bg-background ring-1 ring-black/5 rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-foreground/30 resize-none"
+                      />
+                      <div className="flex justify-end gap-1.5 mt-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditingId(null)}
+                          className="grid place-items-center size-7 rounded-full ring-1 ring-black/10 text-muted-foreground hover:text-foreground"
+                          aria-label="בטל"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={!editingText.trim() || updateComment.isPending}
+                          onClick={() => {
+                            const text = editingText.trim();
+                            if (!text) return;
+                            updateComment.mutate(
+                              { commentId: c.id, text },
+                              { onSuccess: () => setEditingId(null) },
+                            );
+                          }}
+                          className="grid place-items-center size-7 rounded-full bg-primary text-primary-foreground disabled:opacity-50"
+                          aria-label="שמור"
+                        >
+                          <Check className="size-3.5" />
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-sm text-foreground/80 flex-1 whitespace-pre-wrap">
+                          {c.text}
+                        </p>
+                        <div className="flex gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingId(c.id);
+                              setEditingText(c.text);
+                            }}
+                            className="grid place-items-center size-7 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground"
+                            aria-label="ערוך הערה"
+                          >
+                            <Pencil className="size-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={deleteComment.isPending}
+                            onClick={() => deleteComment.mutate(c.id)}
+                            className="grid place-items-center size-7 rounded-full text-muted-foreground hover:bg-secondary hover:text-red-700 disabled:opacity-50"
+                            aria-label="מחק הערה"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1.5">{c.at}</p>
+                    </>
+                  )}
                 </div>
-                <div className="flex-1 bg-card ring-1 ring-black/5 rounded-xl p-3">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <p className="text-xs font-medium">{c.who}</p>
-                    <p className="text-[10px] text-muted-foreground">{c.at}</p>
-                  </div>
-                  <p className="text-sm text-foreground/80 mt-1">{c.text}</p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
             <form
               onSubmit={(e) => {
                 e.preventDefault();

@@ -9,7 +9,7 @@ import {
   useUpdateDefect,
   useUploadImage,
 } from "@/lib/api";
-import type { Owner, Priority } from "@/lib/types";
+import { THIRD_PARTY_OWNER_ID, type Owner, type Priority } from "@/lib/types";
 import { Camera, ChevronDown, ImagePlus, Loader2, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/edit-defect/$id")({
@@ -144,7 +144,7 @@ function EditDefectForm({
             reportedAt,
             protocolRef,
             description: desc,
-            supplierId: owner === "third-party" && supplierId ? supplierId : undefined,
+            supplierId: owner === THIRD_PARTY_OWNER_ID && supplierId ? supplierId : undefined,
             photos,
             photoBefore: photos[0] ?? "",
             photoAfter: photos[1],
@@ -232,7 +232,7 @@ function EditDefectForm({
           </div>
         </Group>
 
-        {owner === "third-party" && (
+        {owner === THIRD_PARTY_OWNER_ID && (
           <Group label="בחר ספק מהרשימה">
             <Select
               value={supplierId}
@@ -270,22 +270,31 @@ function EditDefectForm({
 
         <Group label="תמונות">
           <div className="grid grid-cols-3 gap-2">
-            {photos.map((url) => (
-              <div
-                key={url}
-                className="relative aspect-square rounded-xl ring-1 ring-black/5 overflow-hidden bg-secondary"
-              >
-                <img src={url} alt="" className="size-full object-cover" loading="lazy" />
-                <button
-                  type="button"
-                  onClick={() => removePhoto(url)}
-                  className="absolute top-1.5 right-1.5 grid place-items-center size-7 rounded-full bg-black/60 text-white backdrop-blur hover:bg-black/75 focus:outline-none focus:ring-2 focus:ring-white/60"
-                  aria-label="מחק תמונה"
+            {photos.map((url) => {
+              const rotation = initial.photoMeta?.[url]?.rotation ?? 0;
+              return (
+                <div
+                  key={url}
+                  className="relative aspect-square rounded-xl ring-1 ring-black/5 overflow-hidden bg-secondary"
                 >
-                  <Trash2 className="size-3.5" />
-                </button>
-              </div>
-            ))}
+                  <img
+                    src={url}
+                    alt=""
+                    className="size-full object-cover"
+                    loading="lazy"
+                    style={rotation ? { transform: `rotate(${rotation}deg)` } : undefined}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removePhoto(url)}
+                    className="absolute top-1.5 right-1.5 grid place-items-center size-7 rounded-full bg-black/60 text-white backdrop-blur hover:bg-black/75 focus:outline-none focus:ring-2 focus:ring-white/60"
+                    aria-label="מחק תמונה"
+                  >
+                    <Trash2 className="size-3.5" />
+                  </button>
+                </div>
+              );
+            })}
             <button
               type="button"
               onClick={() => cameraInputRef.current?.click()}

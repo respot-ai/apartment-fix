@@ -1,5 +1,6 @@
 export type Priority = "critical" | "high" | "medium" | "low";
 export type Owner = "contractor" | "homeowner" | "third-party";
+export const THIRD_PARTY_OWNER_ID: Owner = "third-party";
 export type Status = "new" | "in-progress" | "fixed";
 
 export type Supplier = {

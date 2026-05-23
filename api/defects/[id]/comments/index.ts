@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
-import { getDb } from "../../_lib/mongo.js";
-import { commentCreateSchema } from "../../_lib/validation.js";
-import { badRequest, json, notFound, readJson } from "../../_lib/http.js";
+import { getDb } from "../../../_lib/mongo.js";
+import { commentCreateSchema } from "../../../_lib/validation.js";
+import { badRequest, json, notFound, readJson } from "../../../_lib/http.js";
 
 function extractId(req: Request): string | null {
   const url = new URL(req.url);
@@ -31,7 +31,13 @@ export async function POST(req: Request): Promise<Response> {
     {
       $push: {
         comments: comment,
-        activity: { id: randomUUID(), who: comment.who, initials: comment.initials, text: "הוסיף תגובה", at: comment.at },
+        activity: {
+          id: randomUUID(),
+          who: comment.who,
+          initials: comment.initials,
+          text: "הוסיף תגובה",
+          at: comment.at,
+        },
       } as never,
     },
     { returnDocument: "after", projection: { _id: 0 } },
