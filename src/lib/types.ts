@@ -50,6 +50,7 @@ export type Defect = {
   photoBefore: string;
   photoAfter?: string;
   photos?: string[];
+  photoMeta?: Record<string, { rotation?: number }>;
   comments: Comment[];
   activity: ActivityEntry[];
 };

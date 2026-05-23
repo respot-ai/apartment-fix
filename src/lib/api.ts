@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { upload } from "@vercel/blob/client";
 import type { Defect, Lookup, Supplier } from "./types";
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
@@ -91,6 +92,21 @@ export function useAddComment(id: string) {
   });
 }
 
+// --- Uploads ---
+
+export function useUploadImage() {
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const blob = await upload(`defects/${file.name}`, file, {
+        access: "public",
+        handleUploadUrl: "/api/uploads",
+        contentType: file.type || "image/jpeg",
+      });
+      return blob.url;
+    },
+  });
+}
+
 // --- Suppliers ---
 
 export function useSuppliers() {
@@ -165,8 +181,7 @@ function makeLookupHooks(resource: "rooms" | "trades") {
     useDelete() {
       const qc = useQueryClient();
       return useMutation({
-        mutationFn: (id: string) =>
-          request<void>(`/api/${resource}/${id}`, { method: "DELETE" }),
+        mutationFn: (id: string) => request<void>(`/api/${resource}/${id}`, { method: "DELETE" }),
         onSuccess: () => qc.invalidateQueries({ queryKey: listKey }),
       });
     },

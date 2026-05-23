@@ -21,6 +21,7 @@ export const defectCreateSchema = z.object({
   photoBefore: z.string().default(""),
   photoAfter: z.string().optional(),
   photos: z.array(z.string()).optional(),
+  photoMeta: z.record(z.string(), z.object({ rotation: z.number().optional() })).optional(),
 });
 
 export const defectUpdateSchema = defectCreateSchema.partial();

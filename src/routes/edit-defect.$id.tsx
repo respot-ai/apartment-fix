@@ -1,9 +1,16 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import { useDefect, useRooms, useSuppliers, useTrades, useUpdateDefect } from "@/lib/api";
+import {
+  useDefect,
+  useRooms,
+  useSuppliers,
+  useTrades,
+  useUpdateDefect,
+  useUploadImage,
+} from "@/lib/api";
 import type { Owner, Priority } from "@/lib/types";
-import { ChevronDown } from "lucide-react";
+import { Camera, ChevronDown, ImagePlus, Loader2, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/edit-defect/$id")({
   head: () => ({
@@ -50,20 +57,40 @@ function EditDefect() {
     );
   }
 
-  return <EditDefectForm defectId={id} initial={defect} suppliers={suppliers} rooms={rooms} trades={trades} updateDefect={updateDefect} navigate={navigate} />;
+  return (
+    <EditDefectForm
+      defectId={id}
+      initial={defect}
+      suppliers={suppliers}
+      rooms={rooms}
+      trades={trades}
+      updateDefect={updateDefect}
+      navigate={navigate}
+    />
+  );
 }
 
 type EditFormProps = {
   defectId: string;
   initial: NonNullable<ReturnType<typeof useDefect>["data"]>;
-  suppliers: ReturnType<typeof useSuppliers>["data"] extends infer T ? Exclude<T, undefined> : never;
+  suppliers: ReturnType<typeof useSuppliers>["data"] extends infer T
+    ? Exclude<T, undefined>
+    : never;
   rooms: ReturnType<typeof useRooms>["data"] extends infer T ? Exclude<T, undefined> : never;
   trades: ReturnType<typeof useTrades>["data"] extends infer T ? Exclude<T, undefined> : never;
   updateDefect: ReturnType<typeof useUpdateDefect>;
   navigate: ReturnType<typeof useNavigate>;
 };
 
-function EditDefectForm({ defectId, initial, suppliers, rooms, trades, updateDefect, navigate }: EditFormProps) {
+function EditDefectForm({
+  defectId,
+  initial,
+  suppliers,
+  rooms,
+  trades,
+  updateDefect,
+  navigate,
+}: EditFormProps) {
   const [room, setRoom] = useState(initial.room);
   const [trade, setTrade] = useState(initial.trade);
   const [priority, setPriority] = useState<Priority>(initial.priority);
@@ -74,6 +101,32 @@ function EditDefectForm({ defectId, initial, suppliers, rooms, trades, updateDef
   const [dueDate, setDueDate] = useState(initial.dueDate);
   const [reportedAt, setReportedAt] = useState(initial.reportedAt);
   const [protocolRef, setProtocolRef] = useState(initial.protocolRef);
+  const [photos, setPhotos] = useState<string[]>(() => {
+    const merged = [
+      ...(initial.photos ?? []),
+      ...([initial.photoBefore, initial.photoAfter].filter(Boolean) as string[]),
+    ];
+    return merged.filter((v, i, a) => /^https?:\/\//i.test(v) && a.indexOf(v) === i);
+  });
+  const uploadImage = useUploadImage();
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    for (const file of Array.from(files)) {
+      try {
+        const url = await uploadImage.mutateAsync(file);
+        setPhotos((prev) => (prev.includes(url) ? prev : [...prev, url]));
+      } catch {
+        // surface via uploadImage.isError below
+      }
+    }
+  };
+
+  const removePhoto = (url: string) => {
+    setPhotos((prev) => prev.filter((p) => p !== url));
+  };
 
   return (
     <form
@@ -92,6 +145,9 @@ function EditDefectForm({ defectId, initial, suppliers, rooms, trades, updateDef
             protocolRef,
             description: desc,
             supplierId: owner === "third-party" && supplierId ? supplierId : undefined,
+            photos,
+            photoBefore: photos[0] ?? "",
+            photoAfter: photos[1],
           },
           { onSuccess: () => navigate({ to: "/defects/$id", params: { id: defectId } }) },
         );
@@ -111,10 +167,20 @@ function EditDefectForm({ defectId, initial, suppliers, rooms, trades, updateDef
 
         <div className="grid grid-cols-2 gap-3">
           <Group label="אזור">
-            <Select value={room} onChange={setRoom} options={rooms.map((r) => r.name)} placeholder="בחר" />
+            <Select
+              value={room}
+              onChange={setRoom}
+              options={rooms.map((r) => r.name)}
+              placeholder="בחר"
+            />
           </Group>
           <Group label="תחום">
-            <Select value={trade} onChange={setTrade} options={trades.map((t) => t.name)} placeholder="בחר" />
+            <Select
+              value={trade}
+              onChange={setTrade}
+              options={trades.map((t) => t.name)}
+              placeholder="בחר"
+            />
           </Group>
         </div>
 
@@ -202,6 +268,80 @@ function EditDefectForm({ defectId, initial, suppliers, rooms, trades, updateDef
           </Group>
         </div>
 
+        <Group label="תמונות">
+          <div className="grid grid-cols-3 gap-2">
+            {photos.map((url) => (
+              <div
+                key={url}
+                className="relative aspect-square rounded-xl ring-1 ring-black/5 overflow-hidden bg-secondary"
+              >
+                <img src={url} alt="" className="size-full object-cover" loading="lazy" />
+                <button
+                  type="button"
+                  onClick={() => removePhoto(url)}
+                  className="absolute top-1.5 right-1.5 grid place-items-center size-7 rounded-full bg-black/60 text-white backdrop-blur hover:bg-black/75 focus:outline-none focus:ring-2 focus:ring-white/60"
+                  aria-label="מחק תמונה"
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => cameraInputRef.current?.click()}
+              disabled={uploadImage.isPending}
+              className="aspect-square rounded-xl ring-1 ring-dashed ring-black/15 bg-card grid place-items-center text-muted-foreground hover:text-foreground hover:ring-black/30 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-foreground/30"
+              aria-label="צלם תמונה"
+            >
+              {uploadImage.isPending ? (
+                <Loader2 className="size-5 animate-spin" />
+              ) : (
+                <div className="flex flex-col items-center gap-1">
+                  <Camera className="size-5" />
+                  <span className="text-[10px] font-medium">מצלמה</span>
+                </div>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadImage.isPending}
+              className="aspect-square rounded-xl ring-1 ring-dashed ring-black/15 bg-card grid place-items-center text-muted-foreground hover:text-foreground hover:ring-black/30 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-foreground/30"
+              aria-label="העלה מהמכשיר"
+            >
+              <div className="flex flex-col items-center gap-1">
+                <ImagePlus className="size-5" />
+                <span className="text-[10px] font-medium">קובץ</span>
+              </div>
+            </button>
+          </div>
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => {
+              handleFiles(e.target.files);
+              e.target.value = "";
+            }}
+          />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              handleFiles(e.target.files);
+              e.target.value = "";
+            }}
+          />
+          {uploadImage.isError && (
+            <p className="text-xs text-red-700 mt-2">העלאת תמונה נכשלה. נסה שוב.</p>
+          )}
+        </Group>
+
         <Group label="מקור (פרוטוקול / עמוד)">
           <input
             value={protocolRef}
@@ -211,9 +351,7 @@ function EditDefectForm({ defectId, initial, suppliers, rooms, trades, updateDef
           />
         </Group>
 
-        {updateDefect.isError && (
-          <p className="text-xs text-red-700">שמירה נכשלה. נסה שוב.</p>
-        )}
+        {updateDefect.isError && <p className="text-xs text-red-700">שמירה נכשלה. נסה שוב.</p>}
 
         <div className="grid grid-cols-2 gap-2 pt-2">
           <Link
@@ -260,9 +398,7 @@ function Select({
   options: Opt[];
   placeholder: string;
 }) {
-  const normalized = options.map((o) =>
-    typeof o === "string" ? { value: o, label: o } : o,
-  );
+  const normalized = options.map((o) => (typeof o === "string" ? { value: o, label: o } : o));
   return (
     <div className="relative">
       <select

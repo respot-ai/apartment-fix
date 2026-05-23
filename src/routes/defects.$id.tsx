@@ -51,7 +51,21 @@ function DefectDetail() {
 
   return (
     <div className="pb-10">
-      <ImageViewerDialog src={viewerSrc} onClose={() => setViewerSrc(null)} />
+      <ImageViewerDialog
+        src={viewerSrc}
+        onClose={() => setViewerSrc(null)}
+        initialRotation={(viewerSrc && defect.photoMeta?.[viewerSrc]?.rotation) || 0}
+        onRotate={(rotation) => {
+          if (!viewerSrc) return;
+          const nextMeta = { ...(defect.photoMeta ?? {}) };
+          if (rotation === 0) {
+            delete nextMeta[viewerSrc];
+          } else {
+            nextMeta[viewerSrc] = { ...nextMeta[viewerSrc], rotation };
+          }
+          updateDefect.mutate({ photoMeta: nextMeta });
+        }}
+      />
       <ScreenHeader
         back="/"
         title="פרטי פגם"
@@ -145,6 +159,7 @@ function DefectDetail() {
             <div className="grid grid-cols-2 gap-2 mt-2">
               {images.map((img, i) => {
                 const isUrl = /^https?:\/\//i.test(img);
+                const rotation = defect.photoMeta?.[img]?.rotation ?? 0;
                 return isUrl ? (
                   <button
                     key={i}
@@ -153,7 +168,13 @@ function DefectDetail() {
                     className="aspect-square rounded-xl ring-1 ring-black/5 overflow-hidden bg-secondary focus:outline-none focus:ring-2 focus:ring-foreground/30"
                     aria-label="הצג תמונה"
                   >
-                    <img src={img} alt="" className="size-full object-cover" loading="lazy" />
+                    <img
+                      src={img}
+                      alt=""
+                      className="size-full object-cover"
+                      loading="lazy"
+                      style={rotation ? { transform: `rotate(${rotation}deg)` } : undefined}
+                    />
                   </button>
                 ) : (
                   <div

@@ -5,19 +5,21 @@ import { RotateCw, X, ZoomIn, ZoomOut } from "lucide-react";
 type Props = {
   src: string | null;
   onClose: () => void;
+  initialRotation?: number;
+  onRotate?: (rotation: number) => void;
 };
 
 const MIN_SCALE = 1;
 const MAX_SCALE = 6;
 const ZOOM_STEP = 1.5;
 
-export function ImageViewerDialog({ src, onClose }: Props) {
+export function ImageViewerDialog({ src, onClose, initialRotation = 0, onRotate }: Props) {
   const open = src !== null;
   const containerRef = React.useRef<HTMLDivElement | null>(null);
   const [scale, setScale] = React.useState(1);
   const [tx, setTx] = React.useState(0);
   const [ty, setTy] = React.useState(0);
-  const [rotation, setRotation] = React.useState(0);
+  const [rotation, setRotation] = React.useState(initialRotation);
 
   // Reset transform whenever a new image opens.
   React.useEffect(() => {
@@ -25,9 +27,9 @@ export function ImageViewerDialog({ src, onClose }: Props) {
       setScale(1);
       setTx(0);
       setTy(0);
-      setRotation(0);
+      setRotation(initialRotation);
     }
-  }, [open, src]);
+  }, [open, src, initialRotation]);
 
   const clampPan = React.useCallback((nextScale: number, nextX: number, nextY: number) => {
     const el = containerRef.current;
@@ -131,7 +133,11 @@ export function ImageViewerDialog({ src, onClose }: Props) {
   };
 
   const rotateCw = () => {
-    setRotation((r) => r + 90);
+    setRotation((r) => {
+      const next = r + 90;
+      onRotate?.(((next % 360) + 360) % 360);
+      return next;
+    });
     setTx(0);
     setTy(0);
   };
