@@ -42,9 +42,15 @@ function AddDefect() {
   const [desc, setDesc] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [photos, setPhotos] = useState<string[]>([]);
+  const [showErrors, setShowErrors] = useState(false);
   const uploadImage = useUploadImage();
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const missingTitle = !title.trim();
+  const missingRoom = !room;
+  const missingTrade = !trade;
+  const hasMissing = missingTitle || missingRoom || missingTrade;
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -66,7 +72,10 @@ function AddDefect() {
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        if (!title.trim() || !room || !trade) return;
+        if (hasMissing) {
+          setShowErrors(true);
+          return;
+        }
         createDefect.mutate(
           {
             title: title.trim(),
@@ -96,8 +105,13 @@ function AddDefect() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="כותרת קצרה של הפגם"
-            className="w-full bg-card ring-1 ring-black/5 rounded-xl px-3 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-foreground/30"
+            className={`w-full bg-card ring-1 rounded-xl px-3 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-foreground/30 ${
+              showErrors && missingTitle ? "ring-red-500" : "ring-black/5"
+            }`}
           />
+          {showErrors && missingTitle && (
+            <p className="text-xs text-red-700 mt-1">נדרשת כותרת</p>
+          )}
         </Group>
 
         <div className="grid grid-cols-2 gap-3">
@@ -107,7 +121,11 @@ function AddDefect() {
               onChange={setRoom}
               options={rooms.map((r) => r.name)}
               placeholder="בחר"
+              invalid={showErrors && missingRoom}
             />
+            {showErrors && missingRoom && (
+              <p className="text-xs text-red-700 mt-1">בחר אזור</p>
+            )}
           </Group>
           <Group label="תחום">
             <Select
@@ -115,7 +133,11 @@ function AddDefect() {
               onChange={setTrade}
               options={trades.map((t) => t.name)}
               placeholder="בחר"
+              invalid={showErrors && missingTrade}
             />
+            {showErrors && missingTrade && (
+              <p className="text-xs text-red-700 mt-1">בחר תחום</p>
+            )}
           </Group>
         </div>
 
@@ -267,6 +289,9 @@ function AddDefect() {
           )}
         </Group>
 
+        {showErrors && hasMissing && (
+          <p className="text-xs text-red-700">יש להשלים את כל שדות החובה</p>
+        )}
         {createDefect.isError && <p className="text-xs text-red-700">שמירה נכשלה. נסה שוב.</p>}
 
         <div className="grid grid-cols-2 gap-2 pt-2">
@@ -307,11 +332,13 @@ function Select({
   onChange,
   options,
   placeholder,
+  invalid,
 }: {
   value: string;
   onChange: (v: string) => void;
   options: Opt[];
   placeholder: string;
+  invalid?: boolean;
 }) {
   const normalized = options.map((o) => (typeof o === "string" ? { value: o, label: o } : o));
   return (
@@ -319,7 +346,9 @@ function Select({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full appearance-none bg-card ring-1 ring-black/5 rounded-xl px-3 py-3 pl-9 text-sm focus:outline-none focus:ring-foreground/30"
+        className={`w-full appearance-none bg-card ring-1 rounded-xl px-3 py-3 pl-9 text-sm focus:outline-none focus:ring-foreground/30 ${
+          invalid ? "ring-red-500" : "ring-black/5"
+        }`}
       >
         <option value="" disabled>
           {placeholder}

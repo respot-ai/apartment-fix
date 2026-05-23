@@ -62,7 +62,12 @@ export function useCreateDefect() {
     mutationFn: (input: DefectInput) =>
       request<Defect>("/api/defects", { method: "POST", body: JSON.stringify(input) }),
     onSuccess: (doc) => {
-      qc.setQueryData<Defect[]>(defectsKey, (prev) => (prev ? [...prev, doc] : [doc]));
+      const prev = qc.getQueryData<Defect[]>(defectsKey);
+      if (prev) {
+        qc.setQueryData<Defect[]>(defectsKey, [...prev, doc]);
+      } else {
+        qc.invalidateQueries({ queryKey: defectsKey });
+      }
     },
   });
 }
@@ -163,7 +168,12 @@ export function useUploadProtocol() {
       });
     },
     onSuccess: (doc) => {
-      qc.setQueryData<Protocol[]>(protocolsKey, (prev) => (prev ? [...prev, doc] : [doc]));
+      const prev = qc.getQueryData<Protocol[]>(protocolsKey);
+      if (prev) {
+        qc.setQueryData<Protocol[]>(protocolsKey, [...prev, doc]);
+      } else {
+        qc.invalidateQueries({ queryKey: protocolsKey });
+      }
     },
   });
 }
@@ -202,7 +212,12 @@ export function useCreateSupplier() {
     mutationFn: (input: SupplierInput) =>
       request<Supplier>("/api/suppliers", { method: "POST", body: JSON.stringify(input) }),
     onSuccess: (doc) => {
-      qc.setQueryData<Supplier[]>(suppliersKey, (prev) => (prev ? [...prev, doc] : [doc]));
+      const prev = qc.getQueryData<Supplier[]>(suppliersKey);
+      if (prev) {
+        qc.setQueryData<Supplier[]>(suppliersKey, [...prev, doc]);
+      } else {
+        qc.invalidateQueries({ queryKey: suppliersKey });
+      }
     },
   });
 }
@@ -252,7 +267,12 @@ function makeLookupHooks(resource: "rooms" | "trades") {
             body: JSON.stringify({ name }),
           }),
         onSuccess: (doc) => {
-          qc.setQueryData<Lookup[]>(listKey, (prev) => (prev ? [...prev, doc] : [doc]));
+          const prev = qc.getQueryData<Lookup[]>(listKey);
+          if (prev) {
+            qc.setQueryData<Lookup[]>(listKey, [...prev, doc]);
+          } else {
+            qc.invalidateQueries({ queryKey: listKey });
+          }
         },
       });
     },
