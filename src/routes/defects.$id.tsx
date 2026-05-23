@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { ImageViewerDialog } from "@/components/ImageViewerDialog";
 import { formatDate, statusLabel } from "@/lib/format";
 import { useAddComment, useDefect, useUpdateDefect } from "@/lib/api";
 import type { Status } from "@/lib/types";
@@ -8,10 +9,7 @@ import { Pencil } from "lucide-react";
 
 export const Route = createFileRoute("/defects/$id")({
   head: () => ({
-    meta: [
-      { title: "פגם — מעקב מסירה" },
-      { name: "description", content: "פרטי פגם" },
-    ],
+    meta: [{ title: "פגם — מעקב מסירה" }, { name: "description", content: "פרטי פגם" }],
   }),
   component: DefectDetail,
 });
@@ -28,6 +26,7 @@ function DefectDetail() {
   const updateDefect = useUpdateDefect(id);
   const addComment = useAddComment(id);
   const [commentText, setCommentText] = useState("");
+  const [viewerSrc, setViewerSrc] = useState<string | null>(null);
 
   if (isLoading) {
     return <div className="p-10 text-center text-sm text-muted-foreground">טוען…</div>;
@@ -51,6 +50,7 @@ function DefectDetail() {
 
   return (
     <div className="pb-10">
+      <ImageViewerDialog src={viewerSrc} onClose={() => setViewerSrc(null)} />
       <ScreenHeader
         back="/"
         title="פרטי פגם"
@@ -132,15 +132,15 @@ function DefectDetail() {
               {images.map((img, i) => {
                 const isUrl = /^https?:\/\//i.test(img);
                 return isUrl ? (
-                  <a
+                  <button
                     key={i}
-                    href={img}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="aspect-square rounded-xl ring-1 ring-black/5 overflow-hidden bg-secondary"
+                    type="button"
+                    onClick={() => setViewerSrc(img)}
+                    className="aspect-square rounded-xl ring-1 ring-black/5 overflow-hidden bg-secondary focus:outline-none focus:ring-2 focus:ring-foreground/30"
+                    aria-label="הצג תמונה"
                   >
                     <img src={img} alt="" className="size-full object-cover" loading="lazy" />
-                  </a>
+                  </button>
                 ) : (
                   <div
                     key={i}
